@@ -1,0 +1,36 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Dataset and generated artifacts — never commit these (keep the empty dirs)
+data/*
+!data/.gitkeep
+artifacts/*
+!artifacts/.gitkeep
+
+# Video files must never enter git history (DAiSEE license + repo size)
+*.avi
+*.mp4
+*.mkv
+*.webm
+# ...except the single parity fixture clip, which is small and ours
+!ml/tests/fixtures/parity_clip.mp4
+
+# MediaPipe model asset — downloaded, not committed (see README)
+*.task
+
+# Model binaries: only the shipped web model is tracked
+*.onnx
+!web/public/model/*.onnx
+*.pt
+*.pth
+
+# OS / editor noise
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
