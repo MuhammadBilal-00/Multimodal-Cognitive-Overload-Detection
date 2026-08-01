@@ -74,6 +74,7 @@ the archive plus extracted frames.
 ## Status
 
 - [x] Day 1 — repo, contract, environment
-- [ ] DAiSEE access form submitted, download started *(manual — pending)*
+- [x] DAiSEE access form submitted, download started (2026-08-01)
+- [ ] DAiSEE extracted to `data/DAiSEE/` with official Train/Validation/Test folders
 - [ ] Audio-stream check on first clip (see CONTRACT.md §8)
 - [ ] Day 2 — `features.py` + visual landmark verification
