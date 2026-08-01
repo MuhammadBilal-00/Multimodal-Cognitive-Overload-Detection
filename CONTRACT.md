@@ -186,25 +186,25 @@ Fitted on the DAiSEE **training split only**.
 
 ---
 
-## 8. Audio / multimodality — ⚠️ OPEN, PENDING FIRST CLIP
+## 8. Audio / multimodality — ✅ ANSWERED (FROZEN)
 
-DAiSEE access form not yet submitted as of Day 1. As soon as the first clip
-downloads, run:
+> **Audio stream present: NO.** DAiSEE clips contain a single mpeg4 video
+> stream (640×480 @ 30 fps, 10 s).
+> **Checked:** 2026-08-01 (Day 1–2), via
+> `ffprobe -v error -show_streams <clip>` on 9 clips across all three
+> splits (e.g. Train 1100011002, Validation 4000221001, Test 5000441001).
+> All video-only.
 
-```bash
-ffprobe -v error -show_streams path/to/one_clip.avi | grep codec_type
-```
+**Therefore, from Day 1 onward, "multimodal" means fusion of three visual
+modality families** — geometric (EAR/MAR/brow), pose (yaw/pitch/roll), and
+gaze (iris offset). This framing is used consistently in all writing; no
+audio features exist anywhere in the project.
 
-and record the answer here:
-
-> **Audio stream present:** _unanswered_
-> **Checked on:** _date_ · **Clip:** _id_
-
-**If there is no audio stream**, the project's "multimodal" claim is
-redefined now — not on Day 15 — as **fusion of three visual modality
-families**: geometric (EAR/MAR/brow), pose (yaw/pitch/roll), and gaze
-(iris offset). That framing is genuinely multimodal and defensible; it is
-used consistently from Day 1 onward in all writing.
+Useful extraction facts recorded while checking: 30 fps source → sample
+every 3rd frame for the contract's 10 FPS → ~100 feature rows per 10 s
+clip. Label CSVs cover 5358 / 1429 / 1784 clips (Train/Val/Test) — fewer
+than the ~9,068 on disk. `labels.py` uses the **intersection** of on-disk
+clips and label rows, within official split folders only.
 
 ---
 

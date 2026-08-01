@@ -75,7 +75,7 @@ the archive plus extracted frames.
 
 - [x] Day 1 — repo, contract, environment
 - [x] DAiSEE access form submitted, download started (2026-08-01)
-- [ ] DAiSEE extracted to `data/DAiSEE/` with official Train/Validation/Test folders
-- [ ] Audio-stream check on first clip (see CONTRACT.md §8)
+- [x] DAiSEE extracted to `data/DAiSEE/` with official Train/Validation/Test folders (5481/1720/1866 clips on disk; labels cover 5358/1429/1784)
+- [x] Audio-stream check: **no audio in DAiSEE** — "multimodal" = three visual modality families (CONTRACT.md §8)
 - [x] Day 2 — `features.py` + tests (17 passing) + landmark indices visually verified (`docs/verification/`)
 - [ ] Day 2 — `features.py` + visual landmark verification
