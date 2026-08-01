@@ -1,0 +1,37 @@
+{
+  "config": {
+    "splits": [
+      "Train",
+      "Validation",
+      "Test"
+    ],
+    "min_detection_confidence": 0.5,
+    "target_fps": 10.0,
+    "workers": 18,
+    "limit": null,
+    "resume": true
+  },
+  "elapsed_seconds": 7520.1,
+  "clips_ok": 9032,
+  "clips_failed": 0,
+  "mean_detection_rate": 0.99963649523563,
+  "per_split": {
+    "Train": {
+      "clips_ok": 5446,
+      "clips_failed": 0,
+      "mean_detection_rate": 0.9998423006352889
+    },
+    "Validation": {
+      "clips_ok": 1720,
+      "clips_failed": 0,
+      "mean_detection_rate": 0.999333706128088
+    },
+    "Test": {
+      "clips_ok": 1866,
+      "clips_failed": 0,
+      "mean_detection_rate": 0.9993149416763756
+    }
+  },
+  "low_detection_clips": [],
+  "failures": []
+}
