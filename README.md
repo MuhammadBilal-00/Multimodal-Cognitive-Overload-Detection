@@ -78,4 +78,10 @@ the archive plus extracted frames.
 - [x] DAiSEE extracted to `data/DAiSEE/` with official Train/Validation/Test folders (5481/1720/1866 clips on disk; labels cover 5358/1429/1784)
 - [x] Audio-stream check: **no audio in DAiSEE** — "multimodal" = three visual modality families (CONTRACT.md §8)
 - [x] Day 2 — `features.py` + tests (17 passing) + landmark indices visually verified (`docs/verification/`)
+- [x] Days 3–5 — extraction (9,032 clips, 0 failures, 99.96% detection), windows + `scaler.json` (pitch_centre 0.3733), parity fixture
+- [x] Days 6–7 — TCN (41.5k params), A6.5 browser smoke PASS (static QDQ int8; dynamic quant is browser-incompatible), J1 parity gate PASS (worst diff 0.0079)
+- [x] Days 8–9 — training: 6 runs, winner weighted-CE lr 1e-3, val macro-F1 0.3061 (majority floor 0.1813)
+- [x] Days 10–11 — eval artifacts (validation), trained int8 shipped (60 KB, Δ macro-F1 −0.0016), Next.js app + fake-webcam e2e PASS
+- [ ] Final test-set evaluation — run exactly once, near the end: `python ml/src/eval.py --checkpoint artifacts/runs/20260801_185630/best.pt --split Test --int8 web/public/model/model_int8.onnx`
+- [ ] A5 baselines (reserved for the FYP student — inputs ready in `artifacts/dataset/`)
 - [ ] Day 2 — `features.py` + visual landmark verification
