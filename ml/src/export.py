@@ -46,6 +46,11 @@ def export_fp32(model: torch.nn.Module, out_path: Path) -> None:
                       "states": {0: "batch"}},
         opset_version=17,
         do_constant_folding=True,
+        # torch>=2.13 defaults to the dynamo exporter, which forces opset 18
+        # and emits a graph the ORT dynamic quantizer's shape inference
+        # rejects (found during the A6.5 smoke). The legacy exporter honours
+        # opset 17 and quantizes cleanly.
+        dynamo=False,
     )
 
 

@@ -22,7 +22,9 @@ narwhals==2.24.0
 networkx==3.6.1
 numpy==1.26.4
 onnx==1.22.0
+onnx-ir==0.2.1
 onnxruntime==1.28.0
+onnxscript==0.7.1
 opencv-contrib-python==4.11.0.86
 opencv-python==4.11.0.86
 packaging==26.2
