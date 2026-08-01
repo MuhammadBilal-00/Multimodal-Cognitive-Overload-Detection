@@ -53,9 +53,12 @@ def load_split(split: str) -> TensorDataset:
         torch.from_numpy(data["y_states"]))
 
 
-def inverse_frequency_weights(y: torch.Tensor, n_classes: int = 4) -> torch.Tensor:
+def inverse_frequency_weights(y: torch.Tensor, n_classes: int = 4,
+                              power: float = 1.0) -> torch.Tensor:
+    """power=1.0 -> full inverse frequency; 0.5 -> sqrt (softer, less noisy
+    gradients when the imbalance is extreme, e.g. 119x for class 0)."""
     counts = torch.bincount(y, minlength=n_classes).float()
-    weights = len(y) / (n_classes * counts.clamp(min=1))
+    weights = (len(y) / (n_classes * counts.clamp(min=1))) ** power
     return weights
 
 
@@ -109,6 +112,10 @@ def main() -> None:
     parser.add_argument("--state-loss-weight", type=float, default=0.5)
     parser.add_argument("--focal-gamma", type=float, default=0.0,
                         help="0 = weighted CE; >0 = focal loss with this gamma")
+    parser.add_argument("--weight-power", type=float, default=1.0,
+                        help="exponent on inverse-frequency class weights")
+    parser.add_argument("--label-smoothing", type=float, default=0.0)
+    parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -122,15 +129,18 @@ def main() -> None:
     val_loader = DataLoader(val_ds, batch_size=512)
 
     y_train = train_ds.tensors[1]
-    class_weights = inverse_frequency_weights(y_train)
+    class_weights = inverse_frequency_weights(y_train,
+                                              power=args.weight_power)
 
     model = EngagementTCN()
     if args.focal_gamma > 0:
         engagement_loss = FocalLoss(class_weights, args.focal_gamma)
     else:
-        engagement_loss = nn.CrossEntropyLoss(weight=class_weights)
+        engagement_loss = nn.CrossEntropyLoss(
+            weight=class_weights, label_smoothing=args.label_smoothing)
     states_loss = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr,
+                                 weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=args.epochs)
 
