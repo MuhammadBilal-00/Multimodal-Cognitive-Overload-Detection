@@ -77,4 +77,5 @@ the archive plus extracted frames.
 - [x] DAiSEE access form submitted, download started (2026-08-01)
 - [ ] DAiSEE extracted to `data/DAiSEE/` with official Train/Validation/Test folders
 - [ ] Audio-stream check on first clip (see CONTRACT.md §8)
+- [x] Day 2 — `features.py` + tests (17 passing) + landmark indices visually verified (`docs/verification/`)
 - [ ] Day 2 — `features.py` + visual landmark verification

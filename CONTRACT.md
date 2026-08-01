@@ -95,8 +95,10 @@ pitch = (nose_tip[1] - eye_mid[1]) / (abs(chin[1] - eye_mid[1]) + 1e-8) - PITCH_
 
 ## 4. Landmark indices (MediaPipe Face Mesh, 478-point with iris)
 
-**Status: FROZEN pending visual verification on Day 2** — each index will be
-rendered with its label on a still frame and checked before extraction runs.
+**Status: FROZEN — visually verified on Day 2.** Every index was rendered
+with its label on a real face (`ml/scripts/verify_landmarks.py`, output in
+`docs/verification/`) and 12 automated geometry assertions pass (corner
+ordering, brow-above-eye, iris-inside-eye, nose/chin ordering).
 
 ```python
 LEFT_EYE_EAR  = [33, 160, 158, 133, 153, 144]   # p1..p6
@@ -121,18 +123,25 @@ FaceLandmarker** — Python: `mediapipe.tasks.python.vision.FaceLandmarker`
 landmark parity. Video mode (`running_mode=VIDEO`) in extraction; the
 FaceLandmarker outputs all 478 points including iris by default.
 
-### ⚠️ OPEN — DECIDE ON DAY 2, THEN FROZEN
+### Conventions — DECIDED DAY 2, NOW FROZEN
 
-Two conventions must be decided when `features.py` is written, documented in
-its docstring IN CAPITAL LETTERS, and never changed afterwards:
+Documented in capital letters in the `features.py` docstring; repeated here:
 
-1. **Coordinate convention.** MediaPipe (Python and JS alike) emits
-   normalised 0–1 coordinates. Either both sides convert to pixels, or both
-   stay normalised with x multiplied by the aspect ratio (width/height) to
-   correct for non-square frames. Whatever Python does, TypeScript does
-   identically.
-2. **"Left" means image-left or subject-left.** Trivial-sounding, classic
-   parity failure. One sentence, written down, both sides comply.
+1. **Coordinates are PIXELS.** Both sides convert MediaPipe's normalised
+   output before calling `compute_features`:
+   `x_px = x_norm · frame_width`, `y_px = y_norm · frame_height`,
+   `z_px = z_norm · frame_width`. Aspect ratio is thereby handled
+   automatically. `frame_shape` is `(HEIGHT, WIDTH)`. z is carried but no
+   contract feature currently uses it.
+2. **"Left" means IMAGE-LEFT in an un-mirrored frame** — the subject's
+   *right* eye/brow for a person facing the camera. Frames must be
+   processed un-mirrored on both sides; mirroring is for display only
+   (browser selfie views typically mirror via CSS — Track B must feed the
+   raw, un-mirrored video frame to the landmarker).
+3. **Sign conventions.** y grows downward (image convention). Positive
+   `gaze_x` = iris toward image-right; positive `gaze_y` = downward;
+   positive `roll` = image-right eye lower than image-left eye; negative
+   `yaw` = nose nearer the image-left eye.
 
 ---
 
