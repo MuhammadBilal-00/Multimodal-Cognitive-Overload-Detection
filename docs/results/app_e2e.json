@@ -1,0 +1,23 @@
+{
+ "face_present": true,
+ "window_full": true,
+ "probs_sum_to_1": true,
+ "label_valid": true,
+ "landmark_ms": 122.80000019073486,
+ "infer_ms": 2.5,
+ "effective_fps": 9.331345569108905,
+ "engagement_probs": [
+  0.3974769523670783,
+  0.11827777533264612,
+  0.3588525741913384,
+  0.12539269810893722
+ ],
+ "engagement_label": "very low",
+ "state_probs": [
+  0.4329820507269883,
+  0.5210574344813476,
+  0.2601735058488728,
+  0.7365689134254796
+ ],
+ "ok": true
+}

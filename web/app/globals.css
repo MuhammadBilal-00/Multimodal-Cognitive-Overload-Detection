@@ -1,0 +1,82 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --surface: #f6f7f9;
+  --ink: #1a1d21;
+  --muted: #6a7076;
+  --border: #e3e6ea;
+  --accent: #2a78d6;
+  --good: #1baf7a;
+  --warn: #eb6834;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101316;
+    --surface: #1a1e23;
+    --ink: #e8eaed;
+    --muted: #9aa1a9;
+    --border: #2c3238;
+    --accent: #3987e5;
+    --good: #199e70;
+    --warn: #d95926;
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+
+h1 { font-size: 1.4rem; margin-bottom: 4px; }
+.sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+video.preview {
+  width: 100%;
+  border-radius: 8px;
+  background: #000;
+  transform: scaleX(-1); /* DISPLAY mirroring only - processing is unmirrored */
+}
+
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+button.primary:disabled { opacity: 0.5; cursor: default; }
+
+.bar-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.bar-label { width: 110px; font-size: 0.85rem; color: var(--muted); }
+.bar-track {
+  flex: 1; height: 14px; background: var(--border);
+  border-radius: 7px; overflow: hidden;
+}
+.bar-fill { height: 100%; border-radius: 7px; background: var(--accent);
+            transition: width 120ms linear; }
+.bar-fill.top { background: var(--good); }
+.bar-value { width: 44px; text-align: right; font-variant-numeric: tabular-nums;
+             font-size: 0.85rem; }
+
+.headline { font-size: 1.6rem; font-weight: 600; margin: 8px 0 2px; }
+.statline { color: var(--muted); font-size: 0.82rem; margin-top: 12px;
+            font-variant-numeric: tabular-nums; }
+.notice { color: var(--warn); font-size: 0.9rem; margin-top: 8px; }
+a { color: var(--accent); }

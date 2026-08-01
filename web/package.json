@@ -1,1 +1,19 @@
-{"name":"cognitive-state-web","version":"0.1.0","private":true,"type":"module","dependencies":{"@mediapipe/tasks-vision":"^1.0.1","onnxruntime-web":"^1.22.0"}}
+{
+  "name": "cognitive-state-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "assets": "node scripts/copy-assets.mjs"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "next": "^15.5.22",
+    "onnxruntime-web": "^1.22.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}
