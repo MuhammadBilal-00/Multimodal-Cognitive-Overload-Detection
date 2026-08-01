@@ -1,0 +1,29 @@
+{
+ "ok": true,
+ "error": null,
+ "loadMs": 655.9000000953674,
+ "inputNames": [
+  "features"
+ ],
+ "outputNames": [
+  "engagement",
+  "states"
+ ],
+ "engagementShape": [
+  1,
+  4
+ ],
+ "statesShape": [
+  1,
+  4
+ ],
+ "engagementSample": [
+  0.2336580455303192,
+  -0.0438108816742897,
+  -0.0584145113825798,
+  -0.0876217633485794
+ ],
+ "inferMsP50": 0.5999999046325684,
+ "inferMsP90": 1,
+ "inferMsMean": 0.6209999990463256
+}

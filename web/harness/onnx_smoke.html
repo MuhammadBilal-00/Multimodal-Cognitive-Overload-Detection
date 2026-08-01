@@ -1,0 +1,53 @@
+<!-- A6.5 browser half: does the quantized int8 TCN load and run in
+     onnxruntime-web's WASM backend, and how fast? Driven by
+     ml/scripts/browser_tests.py; results land in window.__RESULT. -->
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>onnx smoke</title></head>
+<body>
+<script type="module">
+  import * as ort from "/node_modules/onnxruntime-web/dist/ort.all.min.mjs";
+
+  const RESULT = { ok: false, error: null };
+  window.__RESULT = null;
+
+  try {
+    ort.env.wasm.wasmPaths = "/node_modules/onnxruntime-web/dist/";
+    const t0 = performance.now();
+    const session = await ort.InferenceSession.create(
+      "/public/model/model_int8.onnx",
+      { executionProviders: ["wasm"] });
+    RESULT.loadMs = performance.now() - t0;
+    RESULT.inputNames = session.inputNames;
+    RESULT.outputNames = session.outputNames;
+
+    const x = new ort.Tensor("float32", new Float32Array(30 * 13), [1, 30, 13]);
+
+    // warmup
+    for (let i = 0; i < 10; i++) await session.run({ features: x });
+
+    const times = [];
+    let out = null;
+    for (let i = 0; i < 100; i++) {
+      const t = performance.now();
+      out = await session.run({ features: x });
+      times.push(performance.now() - t);
+    }
+    times.sort((a, b) => a - b);
+
+    RESULT.engagementShape = out.engagement.dims;
+    RESULT.statesShape = out.states.dims;
+    RESULT.engagementSample = Array.from(out.engagement.data);
+    RESULT.inferMsP50 = times[50];
+    RESULT.inferMsP90 = times[90];
+    RESULT.inferMsMean = times.reduce((a, b) => a + b, 0) / times.length;
+    RESULT.ok = out.engagement.dims.join(",") === "1,4"
+      && out.states.dims.join(",") === "1,4"
+      && Array.from(out.engagement.data).every(Number.isFinite);
+  } catch (e) {
+    RESULT.error = String(e && e.stack ? e.stack : e);
+  }
+  window.__RESULT = RESULT;
+</script>
+</body>
+</html>

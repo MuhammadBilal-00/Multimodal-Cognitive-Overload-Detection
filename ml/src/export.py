@@ -79,10 +79,42 @@ def parity_check(model: torch.nn.Module, onnx_path: Path,
     return worst
 
 
-def quantize(fp32_path: Path, int8_path: Path) -> None:
-    from onnxruntime.quantization import QuantType, quantize_dynamic
-    quantize_dynamic(str(fp32_path), str(int8_path),
-                     weight_type=QuantType.QInt8)
+def quantize(fp32_path: Path, int8_path: Path,
+             calibration_npz: Path | None) -> None:
+    """STATIC QDQ int8 quantization.
+
+    Dynamic quantization emits ConvInteger nodes, which onnxruntime-web's
+    WASM backend does not implement (found in the A6.5 browser smoke).
+    Static QDQ emits QLinearConv, which it does. Calibration uses real
+    standardised training windows when available, else random normals
+    (untrained smoke — op support is what matters there).
+    """
+    from onnxruntime.quantization import (
+        CalibrationDataReader, QuantFormat, QuantType, quantize_static)
+
+    if calibration_npz is not None and calibration_npz.exists():
+        data = np.load(calibration_npz)["x"]
+        rng = np.random.default_rng(0)
+        idx = rng.choice(len(data), size=min(256, len(data)), replace=False)
+        samples = [data[i:i + 1].astype(np.float32) for i in idx]
+    else:
+        rng = np.random.default_rng(0)
+        samples = [rng.standard_normal((1, 30, N_FEATURES)).astype(np.float32)
+                   for _ in range(256)]
+
+    class WindowReader(CalibrationDataReader):
+        def __init__(self):
+            self._iter = iter(samples)
+
+        def get_next(self):
+            nxt = next(self._iter, None)
+            return None if nxt is None else {"features": nxt}
+
+    quantize_static(str(fp32_path), str(int8_path), WindowReader(),
+                    quant_format=QuantFormat.QDQ,
+                    activation_type=QuantType.QUInt8,
+                    weight_type=QuantType.QInt8,
+                    per_channel=True)
 
 
 def smoke_run_int8(int8_path: Path) -> None:
@@ -105,6 +137,10 @@ def main() -> None:
                         default=REPO_ROOT / "artifacts" / "export")
     parser.add_argument("--ship", action="store_true",
                         help="copy model_int8.onnx to web/public/model/")
+    parser.add_argument("--calibration", type=Path,
+                        default=REPO_ROOT / "artifacts" / "dataset" / "Train.npz",
+                        help="npz with standardised windows for static "
+                             "quantization calibration")
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
@@ -133,7 +169,7 @@ def main() -> None:
     if worst >= PARITY_TOLERANCE:
         raise SystemExit("PARITY CHECK FAILED — build aborted")
 
-    quantize(fp32_path, int8_path)
+    quantize(fp32_path, int8_path, args.calibration)
     smoke_run_int8(int8_path)
 
     sizes = {p.name: p.stat().st_size for p in (fp32_path, int8_path)}

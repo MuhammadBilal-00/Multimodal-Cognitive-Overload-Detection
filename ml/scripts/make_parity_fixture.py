@@ -1,7 +1,7 @@
-"""Generate the J1 parity fixture (Day 5 deliverable to Track B).
+﻿"""Generate the J1 parity fixture (Day 5 deliverable to Track B).
 
 1. Transcodes one DAiSEE clip to browser-playable H.264 MP4
-   (ml/tests/fixtures/parity_clip.mp4 — NOT committed, DAiSEE license).
+   (ml/tests/fixtures/parity_clip.webm â€” NOT committed, DAiSEE license).
 2. Runs the exact extraction pipeline (FaceLandmarker VIDEO mode, 10 FPS
    sampling, pixel conversion, compute_features with raw pitch) on the
    TRANSCODED mp4 and writes ml/tests/fixtures/parity_expected.json with
@@ -39,11 +39,11 @@ def main() -> None:
     args = parser.parse_args()
 
     FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
-    mp4_path = FIXTURE_DIR / "parity_clip.mp4"
+    mp4_path = FIXTURE_DIR / "parity_clip.webm"
 
     subprocess.run(
         ["ffmpeg", "-y", "-v", "error", "-i", str(args.clip),
-         "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p",
+         "-c:v", "libvpx-vp9", "-crf", "24", "-b:v", "0", "-pix_fmt", "yuv420p",
          "-an", str(mp4_path)],
         check=True)
     sha256 = hashlib.sha256(mp4_path.read_bytes()).hexdigest()
@@ -87,7 +87,7 @@ def main() -> None:
 
     fixture = {
         "version": "1.0",
-        "source_clip": "parity_clip.mp4",
+        "source_clip": "parity_clip.webm",
         "clip_sha256": sha256,
         "source_daisee_clip": args.clip.stem,
         "video": {"fps": src_fps, "sample_step": step,
@@ -108,10 +108,11 @@ def main() -> None:
         json.dump(fixture, fh, indent=1)
 
     det = sum(1 for r in rows if r[-1] == 1.0) / len(rows)
-    print(f"parity_clip.mp4  sha256={sha256[:16]}...  "
+    print(f"parity_clip.webm  sha256={sha256[:16]}...  "
           f"{len(rows)} frames, detection rate {det:.3f}")
     print(f"wrote {out_path}")
 
 
 if __name__ == "__main__":
     main()
+
