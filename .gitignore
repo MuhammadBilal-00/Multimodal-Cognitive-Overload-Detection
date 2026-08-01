@@ -17,8 +17,9 @@ artifacts/*
 *.mp4
 *.mkv
 *.webm
-# ...except the single parity fixture clip, which is small and ours
-!ml/tests/fixtures/parity_clip.mp4
+# NOTE: the parity fixture clip (ml/tests/fixtures/parity_clip.mp4) is
+# DAiSEE-derived and stays OUT of git per the dataset license — share it
+# with Track B directly. parity_expected.json (derived features) IS tracked.
 
 # MediaPipe model asset — downloaded, not committed (see README)
 *.task
