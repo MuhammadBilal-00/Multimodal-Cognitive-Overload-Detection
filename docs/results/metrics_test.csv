@@ -1,0 +1,10 @@
+class,precision,recall,f1,support
+very low (0),0.0,0.0,0.0,32
+low (1),0.0864,0.3728,0.1403,668
+engaged (2),0.5016,0.3754,0.4294,7046
+very engaged (3),0.5001,0.3626,0.4204,6495
+macro,,,0.2475,14241
+weighted,,,0.4108,14241
+accuracy,,,0.3686,14241
+majority baseline (macro-F1),,,0.1655,14241
+3-class merged (0+1=low) macro-F1,,,0.3318,14241

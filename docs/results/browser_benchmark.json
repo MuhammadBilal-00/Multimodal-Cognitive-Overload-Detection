@@ -1,0 +1,31 @@
+{
+ "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+ "models": {
+  "model_int8.onnx": {
+   "available": true,
+   "loadMs": 1681.3999998569489,
+   "inferMs": {
+    "p50": 0.39999985694885254,
+    "p90": 0.5,
+    "p99": 2.0999999046325684,
+    "mean": 0.40349999904632566
+   }
+  },
+  "model_fp32.onnx": {
+   "available": true,
+   "loadMs": 26.699999809265137,
+   "inferMs": {
+    "p50": 0.40000009536743164,
+    "p90": 1,
+    "p99": 1.6000001430511475,
+    "mean": 0.5055000007152557
+   }
+  }
+ },
+ "landmarkerLoadMs": 1001.8999998569489,
+ "landmarkMs": {
+  "p50": 6.5,
+  "p90": 8.900000095367432
+ },
+ "note": "landmark timing is on a faceless gray frame (detector path only); with a face present expect higher values - see live page stats"
+}

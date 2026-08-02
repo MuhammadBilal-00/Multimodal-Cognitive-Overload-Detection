@@ -14,27 +14,41 @@ async function runBenchmark(setProgress) {
   const ort = await import("onnxruntime-web");
   ort.env.wasm.wasmPaths = "/ort/";
 
-  setProgress("loading model…");
-  let t0 = performance.now();
-  const session = await ort.InferenceSession.create(
-    "/model/model_int8.onnx", { executionProviders: ["wasm"] });
-  report.modelLoadMs = performance.now() - t0;
-
-  setProgress("timing inference…");
   const x = new ort.Tensor("float32", new Float32Array(30 * 13), [1, 30, 13]);
-  for (let i = 0; i < 20; i++) await session.run({ features: x });
-  const times = [];
-  for (let i = 0; i < 200; i++) {
-    const t = performance.now();
-    await session.run({ features: x });
-    times.push(performance.now() - t);
-  }
-  times.sort((a, b) => a - b);
-  report.inferMs = {
-    p50: times[100], p90: times[180], p99: times[198],
-    mean: times.reduce((a, b) => a + b, 0) / times.length,
-  };
+  report.models = {};
+  for (const name of ["model_int8.onnx", "model_fp32.onnx"]) {
+    setProgress(`loading ${name}…`);
+    let t0 = performance.now();
+    let session;
+    try {
+      session = await ort.InferenceSession.create(
+        `/model/${name}`, { executionProviders: ["wasm"] });
+    } catch {
+      report.models[name] = { available: false };
+      continue;
+    }
+    const loadMs = performance.now() - t0;
 
+    setProgress(`timing ${name}…`);
+    for (let i = 0; i < 20; i++) await session.run({ features: x });
+    const times = [];
+    for (let i = 0; i < 200; i++) {
+      const t = performance.now();
+      await session.run({ features: x });
+      times.push(performance.now() - t);
+    }
+    times.sort((a, b) => a - b);
+    report.models[name] = {
+      available: true,
+      loadMs,
+      inferMs: {
+        p50: times[100], p90: times[180], p99: times[198],
+        mean: times.reduce((a, b) => a + b, 0) / times.length,
+      },
+    };
+  }
+
+  let t0;
   setProgress("loading landmarker…");
   const { FilesetResolver, FaceLandmarker } =
     await import("@mediapipe/tasks-vision");
