@@ -82,6 +82,19 @@ the archive plus extracted frames.
 - [x] Days 6–7 — TCN (41.5k params), A6.5 browser smoke PASS (static QDQ int8; dynamic quant is browser-incompatible), J1 parity gate PASS (worst diff 0.0079)
 - [x] Days 8–9 — training: 6 runs, winner weighted-CE lr 1e-3, val macro-F1 0.3061 (majority floor 0.1813)
 - [x] Days 10–11 — eval artifacts (validation), trained int8 shipped (60 KB, Δ macro-F1 −0.0016), Next.js app + fake-webcam e2e PASS
-- [ ] Final test-set evaluation — run exactly once, near the end: `python ml/src/eval.py --checkpoint artifacts/runs/20260801_185630/best.pt --split Test --int8 web/public/model/model_int8.onnx`
+- [x] Days 14–15 — **final test-set evaluation (run exactly once, 2026-08-02)**: fp32 macro-F1 **0.2475** vs majority floor 0.1655; int8 0.2460 (Δ −0.0015); 3-class merged 0.3318; J3 browser benchmarks archived
 - [ ] A5 baselines (reserved for the FYP student — inputs ready in `artifacts/dataset/`)
+- [ ] Thesis writeup: methodology, error analysis (class 0 has only 4 test clips; adjacent-class confusion dominates), CONTRACT.md sign-offs
+
+## Headline results
+
+| Metric (Test, 14,241 windows) | Value |
+|---|---|
+| Macro-F1 (fp32) | 0.2475 |
+| Macro-F1 (int8, shipped) | 0.2460 |
+| Majority-class floor | 0.1655 |
+| 3-class merged macro-F1 | 0.3318 |
+| Model size fp32 → int8 | 163 KB → 60 KB |
+| In-browser inference (p50) | 0.4 ms |
+| Feature parity, Python↔browser | max diff 0.0079 (tol 0.02) |
 - [ ] Day 2 — `features.py` + visual landmark verification
