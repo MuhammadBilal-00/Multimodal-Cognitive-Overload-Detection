@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 
-type CamState = 'starting' | 'active' | 'denied' | 'nocamera' | 'busy' | 'unsupported' | 'error';
+type CamState = 'starting' | 'active' | 'denied' | 'nocamera' | 'busy' | 'unsupported' | 'noapi' | 'error';
 
 const MESSAGES: Record<Exclude<CamState, 'active'>, string> = {
   starting: 'Starting camera…',
@@ -9,6 +9,7 @@ const MESSAGES: Record<Exclude<CamState, 'active'>, string> = {
   nocamera: 'No camera found on this device.',
   busy: 'Camera is in use by another application. Close it and reload.',
   unsupported: 'Camera access isn’t supported here — this page needs HTTPS (or localhost) and a device with a camera.',
+  noapi: 'This browser doesn’t implement camera access (navigator.mediaDevices is unavailable). Try an up-to-date Chrome, Edge, or Firefox.',
   error: 'Could not start the camera.',
 };
 
@@ -26,6 +27,10 @@ export default function WebcamFeed({
     let stream: MediaStream | null = null;
     let cancelled = false;
     (async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setState('noapi');
+        return;
+      }
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480, frameRate: 30 },
