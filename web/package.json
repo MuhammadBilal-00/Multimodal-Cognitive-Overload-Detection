@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "assets": "node scripts/copy-assets.mjs",
     "postinstall": "node scripts/copy-assets.mjs"
   },
   "dependencies": {

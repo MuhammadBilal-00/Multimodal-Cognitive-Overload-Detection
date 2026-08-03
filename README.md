@@ -53,6 +53,33 @@ mediapipe is pinned at **1.0.0**, which has removed the legacy
 (`FaceLandmarker`). See CONTRACT.md §4 for why this also helps
 Python↔JS parity.
 
+## Setup (Track B)
+
+Requires Node.js 20+.
+
+```powershell
+cd web
+npm install    # postinstall also runs `npm run assets` (copies onnxruntime-web
+               # and @mediapipe/tasks-vision WASM into public/ort and
+               # public/mediapipe — gitignored, regenerated every install)
+```
+
+Then download the same MediaPipe model asset used by Track A (also not
+committed — same file, self-hosted so the demo works offline):
+
+```powershell
+Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task" -OutFile web\public\models\face_landmarker.task
+```
+
+```powershell
+npm run dev    # http://localhost:3000 — allow camera access
+```
+
+Currently runs against a **dummy** ONNX model (`scripts/make_dummy_onnx.py`,
+same I/O shapes as CONTRACT.md §5) so Track B is never blocked waiting on
+the trained model. Swapping in the real `model_int8.onnx` + `scaler.json`
+is a file replacement — see CONTRACT.md §1.
+
 ## Dataset
 
 DAiSEE is **not redistributed** in this repository. Request access via the
