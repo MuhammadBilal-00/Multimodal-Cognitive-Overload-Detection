@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 
-type CamState = 'starting' | 'active' | 'denied' | 'nocamera' | 'busy' | 'error';
+type CamState = 'starting' | 'active' | 'denied' | 'nocamera' | 'busy' | 'unsupported' | 'error';
 
 const MESSAGES: Record<Exclude<CamState, 'active'>, string> = {
   starting: 'Starting camera…',
   denied: 'Camera permission denied. Allow camera access in the browser address bar, then reload.',
   nocamera: 'No camera found on this device.',
   busy: 'Camera is in use by another application. Close it and reload.',
+  unsupported: 'Camera access isn’t supported here — this page needs HTTPS (or localhost) and a device with a camera.',
   error: 'Could not start the camera.',
 };
 
@@ -41,6 +42,7 @@ export default function WebcamFeed({
         if (err.name === 'NotAllowedError') setState('denied');
         else if (err.name === 'NotFoundError') setState('nocamera');
         else if (err.name === 'NotReadableError') setState('busy');
+        else if (err.name === 'NotSupportedError') setState('unsupported');
         else setState('error');
       }
     })();
