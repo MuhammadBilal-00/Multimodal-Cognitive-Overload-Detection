@@ -1,0 +1,13 @@
+{
+  "cycles": 300,
+  "meanMs": 0.28671666661898293,
+  "p50": 0.2250000238418579,
+  "p95": 0.5449999570846558,
+  "p99": 1.7200000286102295,
+  "meanFps": 3487.76376271456,
+  "heapDeltaMB": 0,
+  "backend": "wasm",
+  "threads": 8,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "timestamp": "2026-08-03T17:45:33.691Z"
+}

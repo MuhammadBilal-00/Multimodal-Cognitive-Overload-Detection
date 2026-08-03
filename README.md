@@ -14,6 +14,40 @@ with onnxruntime-web on features extracted by MediaPipe Face Mesh.
 **`CONTRACT.md` is the interface contract between the two tracks. Read it
 first.**
 
+## Architecture (Track B — everything below runs in the browser)
+
+```mermaid
+flowchart TD
+    subgraph Browser["Browser — single origin, self-hosted assets, nothing leaves"]
+        Cam["Webcam\ngetUserMedia"] -->|"raw, un-mirrored\nvideo element"| Det
+
+        subgraph Loop["rAF loop — display 30+ fps, sampled 10 Hz"]
+            Det["MediaPipe FaceLandmarker\n478 landmarks (incl. iris), WASM"]
+            Feat["features.ts\n13 floats, CONTRACT.md §2-4"]
+            Buf["RingBuffer\n30 frames = 3.0 s window"]
+            Det -->|"10 Hz"| Feat --> Buf
+        end
+
+        Buf -->|"isFull(), every 5th sample = 2 Hz"| Std["standardise()\n(x-mean)/std via scaler.json"]
+        Std --> Ort["onnxruntime-web session\nWASM, created once"]
+        Ort -->|"engagement[4], states[4]\nraw logits"| Post["softmax / sigmoid\n(in JS, not the graph)"]
+        Post --> UI["Dashboard\nPredictionPanel · FeaturePanel · PerfHUD"]
+    end
+
+    Assets["Self-hosted:\n/ort/*.wasm · /mediapipe/wasm/*\n/models/face_landmarker.task\n/model/model_int8.onnx + scaler.json"] -.->|"same-origin fetch,\nload-time only"| Loop
+    Assets -.-> Ort
+
+    CSP["CSP: connect-src 'self'\n+ COOP/COEP"] -.->|enforces| Browser
+```
+
+No server, no CDN, no third-party origin: `next.config.mjs` ships
+`Content-Security-Policy: connect-src 'self'`, which makes any cross-origin
+network call fail closed at the browser level regardless of what any
+dependency tries to do — see `docs/privacy.md` for why that header exists
+and the real telemetry call it blocks. Stage-by-stage breakdown (file
+references, timing, and the two production-build fixes that shaped this
+design) in `docs/architecture.md`.
+
 ## Repository layout
 
 ```
@@ -52,6 +86,33 @@ mediapipe is pinned at **1.0.0**, which has removed the legacy
 `mp.solutions.face_mesh` API — all code uses the Tasks API
 (`FaceLandmarker`). See CONTRACT.md §4 for why this also helps
 Python↔JS parity.
+
+## Setup (Track B)
+
+Requires Node.js 20+.
+
+```powershell
+cd web
+npm install    # postinstall also runs `npm run assets` (copies onnxruntime-web
+               # and @mediapipe/tasks-vision WASM into public/ort and
+               # public/mediapipe — gitignored, regenerated every install)
+```
+
+Then download the same MediaPipe model asset used by Track A (also not
+committed — same file, self-hosted so the demo works offline):
+
+```powershell
+Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task" -OutFile web\public\models\face_landmarker.task
+```
+
+```powershell
+npm run dev    # http://localhost:3000 — allow camera access
+```
+
+Currently runs against a **dummy** ONNX model (`scripts/make_dummy_onnx.py`,
+same I/O shapes as CONTRACT.md §5) so Track B is never blocked waiting on
+the trained model. Swapping in the real `model_int8.onnx` + `scaler.json`
+is a file replacement — see CONTRACT.md §1.
 
 ## Dataset
 
