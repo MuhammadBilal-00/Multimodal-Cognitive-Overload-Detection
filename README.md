@@ -44,7 +44,9 @@ No server, no CDN, no third-party origin: `next.config.mjs` ships
 `Content-Security-Policy: connect-src 'self'`, which makes any cross-origin
 network call fail closed at the browser level regardless of what any
 dependency tries to do — see `docs/privacy.md` for why that header exists
-and the real telemetry call it blocks.
+and the real telemetry call it blocks. Stage-by-stage breakdown (file
+references, timing, and the two production-build fixes that shaped this
+design) in `docs/architecture.md`.
 
 ## Repository layout
 
