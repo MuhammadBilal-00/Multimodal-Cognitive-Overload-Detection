@@ -109,10 +109,10 @@ Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/face_lan
 npm run dev    # http://localhost:3000 — allow camera access
 ```
 
-Currently runs against a **dummy** ONNX model (`scripts/make_dummy_onnx.py`,
-same I/O shapes as CONTRACT.md §5) so Track B is never blocked waiting on
-the trained model. Swapping in the real `model_int8.onnx` + `scaler.json`
-is a file replacement — see CONTRACT.md §1.
+The app ships the **real trained** `model_int8.onnx` + `scaler.json` in
+`web/public/model/` (since the 2026-08-03 repository merge). The dummy-model
+generator (`scripts/make_dummy_onnx.py`, same I/O shapes as CONTRACT.md §5)
+remains available for development without the trained weights.
 
 ## Dataset
 
@@ -144,8 +144,13 @@ the archive plus extracted frames.
 - [x] Days 8–9 — training: 6 runs, winner weighted-CE lr 1e-3, val macro-F1 0.3061 (majority floor 0.1813)
 - [x] Days 10–11 — eval artifacts (validation), trained int8 shipped (60 KB, Δ macro-F1 −0.0016), Next.js app + fake-webcam e2e PASS
 - [x] Days 14–15 — **final test-set evaluation (run exactly once, 2026-08-02)**: fp32 macro-F1 **0.2475** vs majority floor 0.1655; int8 0.2460 (Δ −0.0015); 3-class merged 0.3318; J3 browser benchmarks archived
+- [x] 2026-08-03 — Track A + Track B repositories merged (unrelated histories); real trained model kept, Azeem's app canonical in `web/`
+- [x] 2026-08-03 — CONTRACT.md v1.1 (§6 Amendment 1: 3 s prediction cadence), both partners signed; multi-face detection (up to 4, primary-face prediction, People count); landmarker pinned to CPU delegate per parity evidence
 - [ ] A5 baselines (reserved for the FYP student — inputs ready in `artifacts/dataset/`)
-- [ ] Thesis writeup: methodology, error analysis (class 0 has only 4 test clips; adjacent-class confusion dominates), CONTRACT.md sign-offs
+- [ ] Thesis writeup: methodology, error analysis (class 0 has only 4 test clips; adjacent-class confusion dominates)
+- [ ] Re-point `ml/scripts/` browser gates (e2e, benchmarks) at the merged app
+
+Full day-by-day record: `docs/PROGRESS.md`.
 
 ## Headline results
 
@@ -158,4 +163,3 @@ the archive plus extracted frames.
 | Model size fp32 → int8 | 163 KB → 60 KB |
 | In-browser inference (p50) | 0.4 ms |
 | Feature parity, Python↔browser | max diff 0.0079 (tol 0.02) |
-- [ ] Day 2 — `features.py` + visual landmark verification
