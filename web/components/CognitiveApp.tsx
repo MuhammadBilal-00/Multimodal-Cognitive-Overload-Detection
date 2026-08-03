@@ -10,7 +10,7 @@ import BenchmarkPanel from './BenchmarkPanel';
 import { usePipeline } from '../hooks/usePipeline';
 
 export default function CognitiveApp() {
-  const { status, error, landmarks, features, prediction, perf, onVideoReady } = usePipeline();
+  const { status, error, landmarks, faces, primaryIndex, features, prediction, perf, onVideoReady } = usePipeline();
   const [history, setHistory] = useState<number[]>([]);
   const [debugLandmarks, setDebugLandmarks] = useState(false);
   const lastPred = useRef<typeof prediction>(null);
@@ -44,7 +44,7 @@ export default function CognitiveApp() {
             <WebcamFeed onVideoReady={onVideoReady} />
             {debugLandmarks
               ? <LandmarkDebugOverlay landmarks={landmarks} />
-              : <LandmarkOverlay landmarks={landmarks} />}
+              : <LandmarkOverlay faces={faces} primaryIndex={primaryIndex} />}
           </div>
           <FeaturePanel features={features} />
         </div>

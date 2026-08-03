@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FaceLandmarker } from '@mediapipe/tasks-vision';
 import { createLandmarker } from '../lib/faceLandmarker';
 import { computeFeatures, type Landmark } from '../lib/features';
+import { selectPrimaryFace } from '../lib/primaryFace';
 import { RingBuffer } from '../lib/ringBuffer';
 import { loadScaler, type Scaler } from '../lib/scaler';
 import { initInference, runInference } from '../lib/inference';
@@ -23,12 +24,13 @@ export function usePipeline() {
   const [modelsReady, setModelsReady] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [landmarks, setLandmarks] = useState<Landmark[] | null>(null);
+  const [faceState, setFaceState] = useState<{ faces: Landmark[][]; primaryIndex: number }>(
+    { faces: [], primaryIndex: -1 });
   const [features, setFeatures] = useState<Float32Array | null>(null);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [perf, setPerf] = useState({
     renderFps: 0, sampleHz: 0, inferMs: [] as number[],
-    modelBytes: 0, backend: '-', threads: 0, landmarkCount: 0,
+    modelBytes: 0, backend: '-', threads: 0, landmarkCount: 0, faceCount: 0,
   });
 
   const status = !modelsReady ? 'loading models…'
@@ -44,6 +46,7 @@ export function usePipeline() {
   const lastSampleRef = useRef(0);
   const sampleCountRef = useRef(0);
   const inFlightRef = useRef(false);
+  const prevPrimaryRef = useRef<{ cx: number; cy: number } | null>(null);
   const fpsCounter = useRef({ frames: 0, samples: 0, last: performance.now() });
   const inferTimes = useRef<number[]>([]);
 
@@ -96,10 +99,14 @@ export function usePipeline() {
     c.samples++;
 
     const result = lmk.detectForVideo(video, now);
-    const lm = (result.faceLandmarks[0] as Landmark[] | undefined) ?? null;
+    const faces = result.faceLandmarks as Landmark[][];
+    const primary = selectPrimaryFace(faces, prevPrimaryRef.current);
+    prevPrimaryRef.current = primary ? { cx: primary.cx, cy: primary.cy } : null;
+    const lm = primary ? faces[primary.index] : null;
     if (lm && lm.length !== 478) console.error(`landmark count ${lm.length}, expected 478 — iris missing?`);
-    setLandmarks(lm);
-    setPerf((p) => (p.landmarkCount === (lm?.length ?? 0) ? p : { ...p, landmarkCount: lm?.length ?? 0 }));
+    setFaceState({ faces, primaryIndex: primary?.index ?? -1 });
+    setPerf((p) => (p.landmarkCount === (lm?.length ?? 0) && p.faceCount === faces.length
+      ? p : { ...p, landmarkCount: lm?.length ?? 0, faceCount: faces.length }));
 
     const f = computeFeatures(lm, video.videoWidth, video.videoHeight, scaler.pitch_centre);
     setFeatures(f);
@@ -125,5 +132,9 @@ export function usePipeline() {
     rafRef.current = requestAnimationFrame(loop);
   }, [loop]);
 
-  return { status, error, landmarks, features, prediction, perf, onVideoReady };
+  const landmarks = faceState.faces[faceState.primaryIndex] ?? null;
+  return {
+    status, error, landmarks, faces: faceState.faces,
+    primaryIndex: faceState.primaryIndex, features, prediction, perf, onVideoReady,
+  };
 }
