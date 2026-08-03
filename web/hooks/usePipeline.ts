@@ -9,6 +9,10 @@ import { initInference, runInference } from '../lib/inference';
 
 export interface Prediction { engagement: number[]; states: number[]; ms: number }
 
+// Samples between inferences: 10 Hz × 3 s — one prediction per non-overlapping
+// 3.0 s window. CONTRACT.md §6 Amendment 1 (was 5 = 2 Hz).
+const INFERENCE_STRIDE = 30;
+
 export function usePipeline() {
   // Camera-ready and models-ready are two independent async chains with no
   // ordering guarantee (a fake/warm camera can resolve well before several
@@ -102,7 +106,7 @@ export function usePipeline() {
     bufferRef.current.push(f);
     sampleCountRef.current++;
 
-    if (bufferRef.current.isFull() && sampleCountRef.current % 5 === 0 && !inFlightRef.current) {
+    if (bufferRef.current.isFull() && sampleCountRef.current % INFERENCE_STRIDE === 0 && !inFlightRef.current) {
       inFlightRef.current = true;
       runInference(bufferRef.current.window(), scaler)
         .then((pred) => {

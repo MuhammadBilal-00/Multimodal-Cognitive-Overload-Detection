@@ -1,6 +1,6 @@
 # INTERFACE CONTRACT — Track A (ML) ↔ Track B (Web)
 
-**Version 1.0 — Day 1**
+**Version 1.1 — Day 1; §6 Amendment 1 on 2026-08-03**
 **Status of each section: FROZEN unless marked OPEN.**
 
 This document is the single source of truth for everything that crosses the
@@ -168,6 +168,14 @@ caller, using `scaler.json`.
 | Training stride | 10 frames |
 | Inference stride | 5 frames |
 
+> **Amendment 1 — 2026-08-03 (agreed by both partners).** Inference stride
+> for the live web app is raised **5 → 30 frames**: one prediction per
+> non-overlapping 3.0 s window instead of 2 Hz, for a slower, more readable
+> dashboard cadence. Scope: `web/` only (`INFERENCE_STRIDE` in
+> `web/hooks/usePipeline.ts`). Frame rate, window length, and training
+> stride are unchanged; `ml/` code is untouched. The table above records
+> the original Day-1 values.
+
 ---
 
 ## 7. scaler.json schema (FROZEN)
@@ -221,5 +229,5 @@ enforced by an `assert` in code, not a comment.
 
 | Partner | Track | Date | Signed |
 |---|---|---|---|
-| Bilal | A — ML pipeline | | ☐ |
+| Bilal | A — ML pipeline | 2026-08-03 | ☑ |
 | Azeem | B — Web app | 2026-08-03 | ☑ |

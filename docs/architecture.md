@@ -15,7 +15,7 @@ flowchart TD
             Det -->|"10 Hz"| Feat --> Buf
         end
 
-        Buf -->|"isFull(), every 5th sample = 2 Hz"| Std["standardise()\n(x-mean)/std via scaler.json"]
+        Buf -->|"isFull(), every 30th sample = every 3 s"| Std["standardise()\n(x-mean)/std via scaler.json"]
         Std --> Ort["onnxruntime-web session\nWASM, created once"]
         Ort -->|"engagement[4], states[4]\nraw logits"| Post["softmax / sigmoid\n(in JS, not the graph)"]
         Post --> UI["Dashboard\nPredictionPanel · FeaturePanel · PerfHUD"]
@@ -47,7 +47,7 @@ genuinely differ:
 
 - **Display**: uncapped, driven by `requestAnimationFrame` (30+ fps)
 - **Sampling**: throttled to 10 Hz inside the same rAF loop
-- **Inference**: every 5th sample once the buffer is full → 2 Hz
+- **Inference**: every 30th sample once the buffer is full → one prediction per 3 s (CONTRACT.md §6 Amendment 1)
 
 ## Why the model loads via a runtime `import()`, not a static one
 

@@ -19,7 +19,7 @@ export default function CognitiveApp() {
     if (!prediction || prediction === lastPred.current) return;
     lastPred.current = prediction;
     const level = prediction.engagement.indexOf(Math.max(...prediction.engagement));
-    setHistory((h) => [...h.slice(-119), level]); // 120 points @ 2 Hz = 60 s
+    setHistory((h) => [...h.slice(-19), level]); // 20 points @ 1 per 3 s = 60 s
   }, [prediction]);
 
   return (
