@@ -10,7 +10,14 @@ import { initInference, runInference } from '../lib/inference';
 export interface Prediction { engagement: number[]; states: number[]; ms: number }
 
 export function usePipeline() {
-  const [status, setStatus] = useState('loading models…');
+  // Camera-ready and models-ready are two independent async chains with no
+  // ordering guarantee (a fake/warm camera can resolve well before several
+  // MB of WASM finish loading, or vice versa) — deriving status from both
+  // flags avoids the race a single imperative setStatus() sequence had, where
+  // whichever chain finished LAST always overwrote the other's more-advanced
+  // status text.
+  const [modelsReady, setModelsReady] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [landmarks, setLandmarks] = useState<Landmark[] | null>(null);
   const [features, setFeatures] = useState<Float32Array | null>(null);
@@ -19,6 +26,11 @@ export function usePipeline() {
     renderFps: 0, sampleHz: 0, inferMs: [] as number[],
     modelBytes: 0, backend: '-', threads: 0, landmarkCount: 0,
   });
+
+  const status = !modelsReady ? 'loading models…'
+    : !cameraReady ? 'waiting for camera'
+    : !prediction ? 'filling 3s window…'
+    : 'live';
 
   const landmarkerRef = useRef<FaceLandmarker | null>(null);
   const scalerRef = useRef<Scaler | null>(null);
@@ -47,7 +59,7 @@ export function usePipeline() {
         landmarkerRef.current = lmk;
         scalerRef.current = scaler;
         setPerf((p) => ({ ...p, modelBytes: info.modelBytes, backend: info.backend, threads: info.threads }));
-        setStatus('waiting for camera');
+        setModelsReady(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       }
@@ -96,7 +108,6 @@ export function usePipeline() {
         .then((pred) => {
           inferTimes.current = [...inferTimes.current.slice(-29), pred.ms];
           setPrediction(pred);
-          setStatus('live');
         })
         .catch((e) => setError(e instanceof Error ? e.message : String(e)))
         .finally(() => { inFlightRef.current = false; });
@@ -105,7 +116,7 @@ export function usePipeline() {
 
   const onVideoReady = useCallback((v: HTMLVideoElement) => {
     videoRef.current = v;
-    setStatus('filling 3s window…');
+    setCameraReady(true);
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(loop);
   }, [loop]);
