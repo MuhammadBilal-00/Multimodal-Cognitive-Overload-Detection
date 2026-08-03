@@ -5,16 +5,19 @@ export const FEATURE_NAMES = [
   'yaw', 'pitch', 'roll', 'gaze_x', 'gaze_y', 'face_area', 'face_present',
 ] as const;
 
-const LEFT_EYE_EAR = [33, 160, 158, 133, 153, 144];   // p1..p6
-const RIGHT_EYE_EAR = [362, 385, 387, 263, 373, 380]; // p1..p6
-const MOUTH = [61, 291, 13, 14];                      // left, right, upper, lower
-const LEFT_BROW = [70, 63, 105, 66, 107];
-const RIGHT_BROW = [300, 293, 334, 296, 336];
-const INTEROCULAR = [33, 263];
-const NOSE_TIP = 1;
-const CHIN = 152;
-const LEFT_IRIS = [468, 469, 470, 471, 472];
-const RIGHT_IRIS = [473, 474, 475, 476, 477];
+// Exported (not just used internally) so LandmarkDebugOverlay draws the
+// exact same indices computeFeatures reads from — one source of truth,
+// per CONTRACT.md section 4's own warning about index drift.
+export const LEFT_EYE_EAR = [33, 160, 158, 133, 153, 144];   // p1..p6
+export const RIGHT_EYE_EAR = [362, 385, 387, 263, 373, 380]; // p1..p6
+export const MOUTH = [61, 291, 13, 14];                      // left, right, upper, lower
+export const LEFT_BROW = [70, 63, 105, 66, 107];
+export const RIGHT_BROW = [300, 293, 334, 296, 336];
+export const INTEROCULAR = [33, 263];
+export const NOSE_TIP = 1;
+export const CHIN = 152;
+export const LEFT_IRIS = [468, 469, 470, 471, 472];
+export const RIGHT_IRIS = [473, 474, 475, 476, 477];
 const EPS = 1e-8;
 
 export interface Landmark { x: number; y: number; z: number }

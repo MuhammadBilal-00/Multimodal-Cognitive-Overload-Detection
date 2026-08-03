@@ -222,4 +222,4 @@ enforced by an `assert` in code, not a comment.
 | Partner | Track | Date | Signed |
 |---|---|---|---|
 | Bilal | A — ML pipeline | | ☐ |
-| Azeem | B — Web app | | ☐ |
+| Azeem | B — Web app | 2026-08-03 | ☑ |

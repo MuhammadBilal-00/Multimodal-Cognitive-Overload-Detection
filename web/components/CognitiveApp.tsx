@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import WebcamFeed from './WebcamFeed';
 import LandmarkOverlay from './LandmarkOverlay';
+import LandmarkDebugOverlay from './LandmarkDebugOverlay';
 import PredictionPanel from './PredictionPanel';
 import PerfHUD from './PerfHUD';
 import FeaturePanel from './FeaturePanel';
@@ -11,6 +12,7 @@ import { usePipeline } from '../hooks/usePipeline';
 export default function CognitiveApp() {
   const { status, error, landmarks, features, prediction, perf, onVideoReady } = usePipeline();
   const [history, setHistory] = useState<number[]>([]);
+  const [debugLandmarks, setDebugLandmarks] = useState(false);
   const lastPred = useRef<typeof prediction>(null);
 
   useEffect(() => {
@@ -24,15 +26,25 @@ export default function CognitiveApp() {
     <main className="min-h-screen bg-zinc-950 p-6 text-zinc-100">
       <header className="mb-6 flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">Cognitive State — In-Browser Inference</h1>
-        <span className={`rounded-full px-3 py-1 text-sm ${error ? 'bg-red-900 text-red-200' : 'bg-zinc-800 text-cyan-400'}`}>
-          {error ?? status}
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setDebugLandmarks((v) => !v)}
+            className={`rounded-full px-3 py-1 text-sm ${debugLandmarks ? 'bg-cyan-500 text-zinc-950' : 'bg-zinc-800 text-zinc-300'}`}
+          >
+            {debugLandmarks ? 'Debug landmarks: ON' : 'Debug landmarks: OFF'}
+          </button>
+          <span className={`rounded-full px-3 py-1 text-sm ${error ? 'bg-red-900 text-red-200' : 'bg-zinc-800 text-cyan-400'}`}>
+            {error ?? status}
+          </span>
+        </div>
       </header>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <div className="relative">
             <WebcamFeed onVideoReady={onVideoReady} />
-            <LandmarkOverlay landmarks={landmarks} />
+            {debugLandmarks
+              ? <LandmarkDebugOverlay landmarks={landmarks} />
+              : <LandmarkOverlay landmarks={landmarks} />}
           </div>
           <FeaturePanel features={features} />
         </div>
