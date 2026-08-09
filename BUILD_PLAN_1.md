@@ -560,7 +560,7 @@ The proposal's advice to compartmentalise is right. Practical version:
 - [ ] `docs/benchmarks/` — three machines, ms/inference, FPS, memory, hardware specs recorded — 1 of 3 (dev machine, 2026-08-09); runbook for the remaining two in `docs/benchmarks/README.md`
 - [ ] `docs/results/quantization.csv` — size and F1 for fp32 vs int8
 - [ ] `docs/privacy.md` — network evidence + code argument
-- [ ] Live demo runs from a clean `npm install && npm run build && npm start`
-- [ ] Demo survives: bad lighting, no face, glasses, two faces
+- [x] Live demo runs from a clean `npm install && npm run build && npm start` — verified 2026-08-09 on a genuine fresh `git clone` (not this session's working copy); found and fixed one real gap (torch CPU wheel needs `--extra-index-url` up front, README previously implied it as a fallback-only step). Full record: `docs/demo-failure-modes.md`.
+- [x] Demo survives: bad lighting, no face, glasses, two faces — verified 2026-08-09 with real DAiSEE clips (+ one synthetic two-face composite, since no natural DAiSEE clip has two simultaneously front-facing subjects) driven through a genuinely clean build via Playwright fake-camera injection. None crashed, froze, or produced a garbage prediction. Full record, including one UX observation (no dedicated "no face currently visible" banner): `docs/demo-failure-modes.md`.
 - [ ] DAiSEE citations in the README; no video files in git history
 - [ ] The student can walk the full pipeline unaided and answer the questions in her prep plan

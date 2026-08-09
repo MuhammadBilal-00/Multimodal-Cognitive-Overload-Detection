@@ -17,12 +17,17 @@ artifacts/*
 *.mp4
 *.mkv
 *.webm
+*.y4m
 # NOTE: the parity fixture clip (ml/tests/fixtures/parity_clip.mp4) is
 # DAiSEE-derived and stays OUT of git per the dataset license — share it
 # with Track B directly. parity_expected.json (derived features) IS tracked.
 # The PNG frames dumped from that same clip (ml/tests/fixtures/parity_frames/)
 # carry the same DAiSEE-license restriction and stay out of git too.
 ml/tests/fixtures/parity_frames/
+# Phase 1.3 demo-hardening scenario videos (DAiSEE-derived fake-webcam
+# inputs) — same restriction; see docs/demo-failure-modes.md for the
+# recorded observations instead of the source clips.
+ml/tests/fixtures/failure_modes/
 
 # MediaPipe model asset — downloaded, not committed (see README)
 *.task

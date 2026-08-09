@@ -154,6 +154,30 @@ at routes/globals the merge itself deleted — and that the recorded J1
   CPU fallback"; the app has been CPU-only since the numFaces work in
   `c16cd9a`, and CPU-only is required for J1 parity regardless (Amendment 2).
 
+## Phase 1 hardening — 2026-08-09 (PROJECT_COMPLETION_PLAN.md)
+
+All three Phase 1 sub-phases done same day as gap-closure. Full findings:
+`docs/demo-failure-modes.md`.
+
+- **1.1 Clean-machine install** — ran the README verbatim on a genuine
+  fresh `git clone` (not this session's working copy). Found the
+  documented torch-CPU workaround needs to be the primary install
+  command, not a fallback (a plain `pip install -r ml/requirements.txt`
+  fails outright on a clean machine); fixed in README.md. Verified
+  `npm install && npm run build && npm start` end to end, including a
+  real fake-webcam prediction against the freshly built app.
+- **1.2 Cross-browser** — Chrome, Edge, Firefox all load, run, and honor
+  COOP/COEP (all report `wasm×20`, confirming multithreaded WASM
+  everywhere). Chrome/Edge got real face detection via a file-backed
+  fake camera; Firefox has no equivalent in Playwright, so its "no face"
+  path was confirmed but real-face detection there needs one manual
+  check before the defense. Safari skipped (no Mac).
+- **1.3 Failure modes** — no face, two faces (synthetic composite — the
+  one natural DAiSEE candidate never has its background person facing
+  the camera), bad lighting (moderate and severe), and glasses all
+  tested with real DAiSEE clips driven through a clean build. None
+  crashed, froze, or produced a non-normalized/garbage prediction.
+
 ## Artifact index
 
 | Artifact | What it is |
@@ -179,10 +203,13 @@ at routes/globals the merge itself deleted — and that the recorded J1
 
 - **Two more J3 machines** — BUILD_PLAN_1.md §J3 wants ≥3 machines; only
   this dev machine is recorded. Runbook: `docs/benchmarks/README.md`.
+  Blocked on machine availability (PROJECT_COMPLETION_PLAN.md Phase 2).
 - **Thesis writeup** — methodology, error analysis (class 0 sparsity,
   adjacent-class confusion), results tables from `docs/results/`
   (including the new `baselines.csv` comparison table).
-- **CI not yet observed green on GitHub** — `.github/workflows/ci.yml` is
-  written and locally sanity-checked (YAML valid; the J1 gate was proven
-  to catch a deliberately-broken feature formula, run locally), but has
-  not yet actually been pushed and watched run on GitHub Actions.
+- **One manual Firefox check** — Playwright can't feed Firefox a
+  file-backed fake camera the way it can Chromium, so Firefox's
+  real-face detection (as opposed to load/init/no-face-path) hasn't been
+  independently confirmed — see `docs/demo-failure-modes.md`.
+- **Student handoff, freeze + dry run, repo tag** — PROJECT_COMPLETION_PLAN.md
+  Phases 4–5, not started.

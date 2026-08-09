@@ -71,12 +71,19 @@ Requires Python 3.11 on Windows/Linux/macOS.
 ```powershell
 py -3.11 -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r ml\requirements.txt
+pip install --extra-index-url https://download.pytorch.org/whl/cpu -r ml\requirements.txt
 ```
 
-Note: `torch` is pinned as the CPU build; if installing on a fresh machine,
-run `pip install torch --index-url https://download.pytorch.org/whl/cpu`
-first if the plain requirements install pulls the wrong wheel.
+`torch` is pinned as the CPU build (`torch==2.13.0+cpu`); that local
+version identifier only resolves via the `--extra-index-url` above, not
+plain PyPI — confirmed 2026-08-09 by running this exact command on a
+genuinely clean clone: a plain `pip install -r ml\requirements.txt` fails
+outright with `No matching distribution found for torch==2.13.0+cpu`.
+
+Windows only: clone somewhere with a short path (e.g. `C:\dev\...`, not
+several folders deep). `torch`'s own package data has unusually long
+internal paths and can hit Windows' `MAX_PATH` limit inside a deeply
+nested clone directory.
 
 Then download the MediaPipe face-landmark model asset (not committed):
 
