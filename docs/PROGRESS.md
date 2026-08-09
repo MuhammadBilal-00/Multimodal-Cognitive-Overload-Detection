@@ -204,12 +204,19 @@ All three Phase 1 sub-phases done same day as gap-closure. Full findings:
 - **Two more J3 machines** — BUILD_PLAN_1.md §J3 wants ≥3 machines; only
   this dev machine is recorded. Runbook: `docs/benchmarks/README.md`.
   Blocked on machine availability (PROJECT_COMPLETION_PLAN.md Phase 2).
-- **Thesis writeup** — methodology, error analysis (class 0 sparsity,
-  adjacent-class confusion), results tables from `docs/results/`
-  (including the new `baselines.csv` comparison table).
+- **Thesis writeup** — on hold, per instruction, until university
+  template/format, page/word targets, and submission/defense dates are
+  available. Everything else it needs already exists in `docs/results/`
+  (including `baselines.csv`) — PROJECT_COMPLETION_PLAN.md §3.1.
 - **One manual Firefox check** — Playwright can't feed Firefox a
   file-backed fake camera the way it can Chromium, so Firefox's
   real-face detection (as opposed to load/init/no-face-path) hasn't been
   independently confirmed — see `docs/demo-failure-modes.md`.
-- **Student handoff, freeze + dry run, repo tag** — PROJECT_COMPLETION_PLAN.md
-  Phases 4–5, not started.
+- **Student handoff session** — materials ready
+  (`docs/student-handoff.md`: pipeline walkthrough + question bank +
+  `baselines.py` deep-dive); the actual session with the student hasn't
+  happened yet.
+- **Live dry-run rehearsal + `v1.0` tag** — script ready
+  (`docs/dry-run-checklist.md`); deliberately not run/tagged yet —
+  PROJECT_COMPLETION_PLAN.md Phase 5 gates the tag behind the rehearsal
+  actually happening live.

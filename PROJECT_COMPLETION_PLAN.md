@@ -103,9 +103,22 @@ Uses the runbook `GAP_CLOSURE_PLAN.md` Part 3 produces (`docs/benchmarks/README.
 
 **Checkpoint 2:** three correctly-labeled, real-model benchmark JSONs in `docs/benchmarks/`.
 
+> **Status (2026-08-09): Handed off, per your call.** This genuinely
+> needs machine access this session doesn't have. Runbook is ready
+> (`docs/benchmarks/README.md`, from `GAP_CLOSURE_PLAN.md`); exact
+> command: `python ml\scripts\collect_benchmark.py --machine-label "..."`
+> after `npm install && npm run build` in `web/` on each machine. Tracked
+> as the one open item blocking full J3 completion in `docs/PROGRESS.md`
+> and the Definition of Done table below.
+
 ---
 
 ## Phase 3 — Thesis writeup
+
+> **Status (2026-08-09): On hold, per your instruction** — waiting on
+> your university's thesis template/format, page/word targets, and
+> submission/defense dates (§3.2 below). Nothing in §3.1 has changed;
+> it's all still there, ready, whenever you're ready to start.
 
 The largest open item — `docs/PROGRESS.md`'s own open-items list names it first, and it's the one part of this whole plan with no code-level acceptance test. Nearly everything it needs already exists in `docs/results/`; this phase is assembly and writing, not new experiments.
 
@@ -137,6 +150,16 @@ Definition of Done, verbatim: "The student can walk the full pipeline unaided an
 
 **Checkpoint 4:** she can run `python ml/src/baselines.py` and explain every line of the CSV it produces, unaided, on request.
 
+> **Status (2026-08-09): Materials prepared, session itself still to
+> happen.** `docs/student-handoff.md` is a stage-by-stage walkthrough
+> guide (extraction → features → windowing → baselines → TCN → export,
+> each with what to run and what to ask her) plus a question bank pulled
+> directly from BUILD_PLAN_1.md's embedded rationale, and a deep-dive on
+> `baselines.py` specifically sized to Checkpoint 4. This can't close the
+> checkpoint itself — only the actual conversation with the student can —
+> but the walkthrough and questions no longer need to be built from
+> scratch in the room.
+
 ---
 
 ## Phase 5 — Freeze & dry run (J4)
@@ -149,25 +172,45 @@ Direct continuation of BUILD_PLAN_1.md's own Day 20 gate.
 
 **Checkpoint 5:** tagged release, rehearsed demo including failure cases, full Definition of Done table below checked off.
 
+> **Status (2026-08-09):**
+> - **5.2 (README re-verification): DONE.** Every literal command in
+>   `README.md` re-run against current repo state: venv + pip install
+>   (including the fixed torch line), MediaPipe model downloads (both
+>   copies), `npm install`, `npm run dev` (confirmed serving on
+>   `localhost:3000` exactly as documented), the DAiSEE form URL (live),
+>   and a full re-check of git history for stray video/large files (one
+>   file over 1 MB in the whole history, a legitimate verification PNG —
+>   citation and no-video-in-history claims both hold).
+> - **5.1 (live rehearsal): script ready, not yet run.**
+>   `docs/dry-run-checklist.md` is a live-rehearsal script built directly
+>   from the automated `docs/demo-failure-modes.md` findings — what to
+>   trigger, what to say, what's expected, plus a known-limitations
+>   answer bank and a go/no-go list before tagging. It cannot substitute
+>   for actually sitting in front of a real camera and running it.
+> - **5.3 (tag `v1.0`): deliberately not done.** Gated behind the live
+>   rehearsal above actually happening, per this phase's own ordering —
+>   tagging first would invert the point of a dry run.
+
 ---
 
 ## Definition of Done — consolidated (BUILD_PLAN_1.md §10, cross-referenced)
 
 | Item | Status now (2026-08-09, updated) | Closed by |
 |---|---|---|
-| Repo tagged `v1.0`; README works on a clean machine | README half **done** (verified on a fresh clone, one real gap found + fixed); tag still pending | Phase 5.3 |
+| Repo tagged `v1.0`; README works on a clean machine | README **done** (verified on a fresh clone, one real gap found + fixed, re-verified command-by-command); tag deliberately not done — gated behind the live rehearsal | Phase 5.1, 5.3 |
 | J1 parity test in CI and passing | **Done**, with a caveat — see CONTRACT.md Amendment 2 / `GAP_CLOSURE_PLAN.md` | Phase 0 |
 | `docs/results/` — confusion matrix, ROC, per-class metrics, baseline table, class dist | **Done** — `baselines.csv` added | Phase 0 |
-| `docs/benchmarks/` — 3 machines, CPU/RAM/browser recorded | 1 of 3 | Phase 2 |
+| `docs/benchmarks/` — 3 machines, CPU/RAM/browser recorded | 1 of 3 — handed off, runbook ready | Phase 2 |
 | `docs/results/quantization.csv` | **Done** | — |
 | `docs/privacy.md` | **Done** | — |
 | Live demo runs from clean `npm install && npm run build && npm start` | **Done** — verified 2026-08-09 on a genuine fresh clone | Phase 1.1 |
 | Demo survives bad lighting, no face, glasses, two faces | **Done** — verified 2026-08-09, `docs/demo-failure-modes.md` | Phase 1.3 |
 | Cross-browser (Chrome/Firefox/Edge) | **Done**, Firefox with a caveat (no real-face test possible in headless Firefox — needs one manual check) | Phase 1.2 |
 | DAiSEE citations in README; no video files in git history | **Done** — both verified directly (citations present; git history checked clean of large/video blobs) | — |
-| Student can walk the pipeline unaided | Not done | Phase 4 |
+| Student can walk the pipeline unaided | Materials ready (`docs/student-handoff.md`); the actual session is still to happen | Phase 4 |
+| Live dry-run rehearsal | Script ready (`docs/dry-run-checklist.md`); not yet run for real | Phase 5.1 |
 | *(not in original DoD, added by audit)* CI wired at all | **Done** | Phase 0 |
-| *(tracked separately in `docs/PROGRESS.md`)* Thesis writeup | Not started | Phase 3 |
+| *(tracked separately in `docs/PROGRESS.md`)* Thesis writeup | On hold, per your instruction — waiting on your template/dates | Phase 3 |
 
 ---
 

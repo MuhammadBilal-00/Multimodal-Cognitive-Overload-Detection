@@ -54,13 +54,15 @@ design) in `docs/architecture.md`.
 
 ```
 CONTRACT.md            interface contract (source of truth)
+.github/workflows/     CI — vitest/typecheck/pytest always; J1 gate when its fixture is present
 ml/
   requirements.txt     exact pinned Python dependencies
-  src/                 feature extraction, dataset, model, training
+  src/                 feature extraction, dataset, model, training, baselines (A5)
   tests/               unit tests + parity fixtures
 data/                  DAiSEE dataset (gitignored — never committed)
 artifacts/             extracted features, training runs (gitignored)
 docs/results/          every figure and table destined for the thesis
+docs/benchmarks/       J3 per-machine benchmark JSONs + runbook
 web/public/model/      shipped model_int8.onnx + scaler.json
 ```
 
@@ -156,8 +158,10 @@ the archive plus extracted frames.
 - [x] 2026-08-03 — Track A + Track B repositories merged (unrelated histories); real trained model kept, Azeem's app canonical in `web/`
 - [x] 2026-08-03 — CONTRACT.md v1.1 (§6 Amendment 1: 3 s prediction cadence), both partners signed; multi-face detection (up to 4, primary-face prediction, People count); landmarker pinned to CPU delegate per parity evidence
 - [x] 2026-08-09 — Gap-closure pass: J1 rebuilt as a real Playwright Test (caught and fixed a real `numFaces:4` parity regression — see CONTRACT.md Amendment 2, v1.2); A5 baselines (`docs/results/baselines.csv`); J3 benchmark collector rewritten + re-run; J2 e2e script fixed and re-run; CI added (`.github/workflows/ci.yml`)
+- [x] 2026-08-09 — Hardening pass (`PROJECT_COMPLETION_PLAN.md` Phase 1): clean-clone install verified (found + fixed a real README gap); Chrome/Edge/Firefox cross-browser check (COOP/COEP confirmed honored in all three); five demo failure-mode scenarios tested clean — `docs/demo-failure-modes.md`
 - [ ] Thesis writeup: methodology, error analysis (class 0 has only 4 test clips; adjacent-class confusion dominates)
 - [ ] Two more J3 benchmark machines (runbook: `docs/benchmarks/README.md`)
+- [ ] Student handoff walkthrough + freeze/tag (`PROJECT_COMPLETION_PLAN.md` Phases 4–5)
 
 Full day-by-day record: `docs/PROGRESS.md`.
 
