@@ -1,7 +1,7 @@
 # Privacy-Preserving Cognitive Engagement Detection from Webcam Video Using an Edge-Deployed Temporal Convolutional Network
 
-**[Student Name — fill in]**
-**[Banner ID — fill in]**
+**Ibtissam Merzouqi**
+**001487042**
 **[Programme, e.g. MSc Data Modelling — fill in]**
 **[Supervisor — fill in]** | **[Second Marker — fill in]**
 **[Submission date — fill in]**
