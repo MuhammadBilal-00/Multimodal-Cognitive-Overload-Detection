@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FaceLandmarker } from '@mediapipe/tasks-vision';
-import { createLandmarker } from '../lib/faceLandmarker';
+import { createDisplayLandmarker, createFeatureLandmarker } from '../lib/faceLandmarker';
 import { computeFeatures, type Landmark } from '../lib/features';
 import { selectPrimaryFace } from '../lib/primaryFace';
 import { RingBuffer } from '../lib/ringBuffer';
@@ -13,6 +13,22 @@ export interface Prediction { engagement: number[]; states: number[]; ms: number
 // Samples between inferences: 10 Hz × 3 s — one prediction per non-overlapping
 // 3.0 s window. CONTRACT.md §6 Amendment 1 (was 5 = 2 Hz).
 const INFERENCE_STRIDE = 30;
+
+// Minimal debug hook for ml/scripts/e2e_app_test.py (J2): an external
+// Playwright driver polls real app state instead of scraping the DOM.
+// Deliberately small — just enough to assert "a prediction arrived and is
+// well-formed"; not a general-purpose state dump.
+export interface EngineDebugState {
+  status: string;
+  prediction: Prediction | null;
+  facePresent: boolean;
+}
+
+declare global {
+  interface Window {
+    __ENGINE_STATE?: EngineDebugState;
+  }
+}
 
 export function usePipeline() {
   // Camera-ready and models-ready are two independent async chains with no
@@ -38,7 +54,15 @@ export function usePipeline() {
     : !prediction ? 'filling 3s window…'
     : 'live';
 
-  const landmarkerRef = useRef<FaceLandmarker | null>(null);
+  // Two landmarkers, deliberately: displayLandmarker (numFaces: 4) drives
+  // the on-screen overlay + "People" count; featureLandmarker (numFaces: 1)
+  // is the ONLY one ever fed into computeFeatures(), because the model was
+  // trained on Python features extracted with num_faces=1 and numFaces > 1
+  // measurably shifts landmarks enough to fail J1 on blink frames (see
+  // lib/faceLandmarker.ts). Costs a second WASM detection pass per sampled
+  // frame.
+  const displayLandmarkerRef = useRef<FaceLandmarker | null>(null);
+  const featureLandmarkerRef = useRef<FaceLandmarker | null>(null);
   const scalerRef = useRef<Scaler | null>(null);
   const bufferRef = useRef(new RingBuffer());
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -52,18 +76,21 @@ export function usePipeline() {
 
   useEffect(() => {
     let dead = false;
-    let createdLandmarker: FaceLandmarker | null = null;
+    let createdDisplayLandmarker: FaceLandmarker | null = null;
+    let createdFeatureLandmarker: FaceLandmarker | null = null;
     (async () => {
       try {
-        const [lmk, scaler, info] = await Promise.all([
-          createLandmarker(), loadScaler(), initInference(),
+        const [displayLmk, featureLmk, scaler, info] = await Promise.all([
+          createDisplayLandmarker(), createFeatureLandmarker(), loadScaler(), initInference(),
         ]);
         // React StrictMode double-invokes this effect in dev; a landmarker
         // created by an already-cleaned-up run must be closed, not leaked
         // (it holds WASM + a GL context — "Memory climbs steadily" territory).
-        if (dead) { lmk.close(); return; }
-        createdLandmarker = lmk;
-        landmarkerRef.current = lmk;
+        if (dead) { displayLmk.close(); featureLmk.close(); return; }
+        createdDisplayLandmarker = displayLmk;
+        createdFeatureLandmarker = featureLmk;
+        displayLandmarkerRef.current = displayLmk;
+        featureLandmarkerRef.current = featureLmk;
         scalerRef.current = scaler;
         setPerf((p) => ({ ...p, modelBytes: info.modelBytes, backend: info.backend, threads: info.threads }));
         setModelsReady(true);
@@ -74,14 +101,16 @@ export function usePipeline() {
     return () => {
       dead = true;
       cancelAnimationFrame(rafRef.current);
-      createdLandmarker?.close();
+      createdDisplayLandmarker?.close();
+      createdFeatureLandmarker?.close();
     };
   }, []);
 
   const loop = useCallback((now: number) => {
     rafRef.current = requestAnimationFrame(loop);
-    const video = videoRef.current, lmk = landmarkerRef.current, scaler = scalerRef.current;
-    if (!video || !lmk || !scaler || video.readyState < 2) return;
+    const video = videoRef.current, displayLmk = displayLandmarkerRef.current,
+      featureLmk = featureLandmarkerRef.current, scaler = scalerRef.current;
+    if (!video || !displayLmk || !featureLmk || !scaler || video.readyState < 2) return;
 
     const c = fpsCounter.current;
     c.frames++;
@@ -98,13 +127,19 @@ export function usePipeline() {
     lastSampleRef.current = now;
     c.samples++;
 
-    const result = lmk.detectForVideo(video, now);
-    const faces = result.faceLandmarks as Landmark[][];
+    // Overlay/People-count path: all detected faces, display purposes only.
+    const displayResult = displayLmk.detectForVideo(video, now);
+    const faces = displayResult.faceLandmarks as Landmark[][];
     const primary = selectPrimaryFace(faces, prevPrimaryRef.current);
     prevPrimaryRef.current = primary ? { cx: primary.cx, cy: primary.cy } : null;
-    const lm = primary ? faces[primary.index] : null;
-    if (lm && lm.length !== 478) console.error(`landmark count ${lm.length}, expected 478 — iris missing?`);
     setFaceState({ faces, primaryIndex: primary?.index ?? -1 });
+
+    // Model-feeding path: numFaces:1 only — see lib/faceLandmarker.ts for
+    // why this must stay a separate detection from the overlay above.
+    const featureResult = featureLmk.detectForVideo(video, now);
+    const lm = featureResult.faceLandmarks && featureResult.faceLandmarks.length > 0
+      ? (featureResult.faceLandmarks[0] as Landmark[]) : null;
+    if (lm && lm.length !== 478) console.error(`landmark count ${lm.length}, expected 478 — iris missing?`);
     setPerf((p) => (p.landmarkCount === (lm?.length ?? 0) && p.faceCount === faces.length
       ? p : { ...p, landmarkCount: lm?.length ?? 0, faceCount: faces.length }));
 
@@ -131,6 +166,13 @@ export function usePipeline() {
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(loop);
   }, [loop]);
+
+  useEffect(() => {
+    window.__ENGINE_STATE = {
+      status, prediction,
+      facePresent: features ? features[12] === 1 : false,
+    };
+  }, [status, prediction, features]);
 
   const landmarks = faceState.faces[faceState.primaryIndex] ?? null;
   return {

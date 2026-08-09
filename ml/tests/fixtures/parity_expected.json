@@ -1,7 +1,7 @@
 {
  "version": "1.0",
  "source_clip": "parity_clip.webm",
- "clip_sha256": "4dda6be6765e513f25f478fadae8f2acc02d98fe596639b39170dad5d65cc7bf",
+ "clip_sha256": "b41e885fb7fa91150eeea8230fa71c9301330a9e98495c5a36054f5d22bfa12b",
  "source_daisee_clip": "1100011002",
  "video": {
   "fps": 30.0,

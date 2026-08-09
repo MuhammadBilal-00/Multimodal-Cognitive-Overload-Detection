@@ -5,6 +5,12 @@ export interface BenchmarkResult {
   cycles: number; meanMs: number; p50: number; p95: number; p99: number;
   meanFps: number; heapDeltaMB: number | null;
   backend: string; threads: number; userAgent: string; timestamp: string;
+  // Rough hardware hints, readable only from inside the page — a
+  // Playwright driver collecting this JSON externally can't inject these
+  // after the fact. CPU model / RAM amount still need a human-supplied
+  // --machine-label; these are proxies, not exact hardware identification.
+  hardwareConcurrency: number;
+  deviceMemory: number | null;
 }
 
 const pct = (sorted: number[], p: number) =>
@@ -32,5 +38,7 @@ export async function runBenchmark(cycles = 300): Promise<BenchmarkResult> {
     heapDeltaMB: heapBefore != null && heapAfter != null ? (heapAfter - heapBefore) / 1048576 : null,
     backend: info.backend, threads: info.threads,
     userAgent: navigator.userAgent, timestamp: new Date().toISOString(),
+    hardwareConcurrency: navigator.hardwareConcurrency,
+    deviceMemory: (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? null,
   };
 }

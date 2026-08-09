@@ -1,0 +1,15 @@
+{
+  "cycles": 300,
+  "meanMs": 0.5674333278338114,
+  "p50": 0.47499990463256836,
+  "p95": 1.1649999618530273,
+  "p99": 2.115000009536743,
+  "meanFps": 1762.3215820218402,
+  "heapDeltaMB": 0,
+  "backend": "wasm",
+  "threads": 20,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "timestamp": "2026-08-09T16:33:35.157Z",
+  "hardwareConcurrency": 20,
+  "deviceMemory": 16
+}

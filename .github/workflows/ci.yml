@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  web-unit:
+    name: web / typecheck + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: npm ci
+        working-directory: web
+        run: npm ci
+      - name: typecheck
+        working-directory: web
+        run: npx tsc --noEmit
+      - name: vitest
+        working-directory: web
+        run: npm test
+
+  web-parity:
+    name: web / J1 feature-parity gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: npm ci
+        working-directory: web
+        run: npm ci
+      - name: Download MediaPipe face landmarker model
+        working-directory: web
+        run: |
+          mkdir -p public/models
+          curl -sSL -o public/models/face_landmarker.task "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task"
+      # ml/tests/fixtures/parity_frames/*.png are DAiSEE-derived and, per
+      # the dataset license (see .gitignore), can never be committed to
+      # git — so a plain checkout never has them. Run the real J1 gate
+      # only on a runner that was seeded with them some other way (e.g.
+      # self-hosted with DAiSEE access); otherwise skip with a visible
+      # warning rather than fail every ordinary push.
+      - name: Check for the DAiSEE-derived parity fixture
+        id: fixture
+        run: |
+          count=$(find ml/tests/fixtures/parity_frames -name '*.png' 2>/dev/null | wc -l)
+          echo "found $count parity frame PNGs"
+          if [ "$count" -gt 0 ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Install Playwright Chromium
+        if: steps.fixture.outputs.present == 'true'
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Run J1 parity gate
+        if: steps.fixture.outputs.present == 'true'
+        working-directory: web
+        run: npm run test:parity
+      - name: Skip notice (fixture unavailable)
+        if: steps.fixture.outputs.present != 'true'
+        run: echo "::warning::J1 parity fixture (ml/tests/fixtures/parity_frames/*.png, DAiSEE-derived) is not present on this runner and cannot be committed to git per the dataset license. Skipping npm run test:parity. Run it locally after 'python ml/scripts/make_parity_fixture.py' with DAiSEE data available, or on a runner pre-seeded with the fixture."
+
+  ml-tests:
+    name: ml / pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: ml/requirements.txt
+      # torch is pinned to the +cpu build (see README "Setup (Track A)");
+      # that local version identifier only resolves via PyTorch's own
+      # wheel index, not plain PyPI.
+      - name: pip install
+        run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r ml/requirements.txt
+      - name: pytest
+        run: pytest ml/tests/ -q

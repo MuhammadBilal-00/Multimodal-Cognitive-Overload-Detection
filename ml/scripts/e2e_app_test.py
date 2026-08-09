@@ -1,9 +1,15 @@
-"""End-to-end test of the Next.js app with a fake webcam.
+"""J2: end-to-end test of the current app with a fake webcam.
 
 Feeds the parity clip to Chromium via --use-file-for-fake-video-capture,
-starts the production Next.js server, clicks "Start camera", and waits for
-a real prediction to render. Asserts the full pipeline (webcam ->
-landmarker -> features -> scaler -> window -> int8 ONNX -> UI) end to end.
+starts the production Next.js server, and waits for a real prediction to
+land via window.__ENGINE_STATE (exposed by hooks/usePipeline.ts). Asserts
+the full pipeline end to end: webcam -> landmarker -> features -> scaler
+-> window -> int8 ONNX -> UI.
+
+There is no "Start camera" button to click — the current app starts the
+camera automatically once permission is granted (usePipeline.ts /
+CognitiveApp.tsx), unlike the deleted JS scaffold this script originally
+targeted.
 
 Writes docs/results/app_screenshot.png and app_e2e.json.
 
@@ -23,11 +29,14 @@ RESULTS_DIR = REPO_ROOT / "docs" / "results"
 SCRATCH = REPO_ROOT / "artifacts"
 PORT = 3123
 
+LEVELS = ["Very Low", "Low", "High", "Very High"]  # PredictionPanel.tsx
+
 
 def make_y4m() -> Path:
     """Chromium's fake capture device needs y4m (raw) input."""
     y4m = SCRATCH / "parity_cam.y4m"
     if not y4m.exists():
+        SCRATCH.mkdir(parents=True, exist_ok=True)
         subprocess.run(
             ["ffmpeg", "-y", "-v", "error",
              "-i", str(REPO_ROOT / "ml" / "tests" / "fixtures"
@@ -54,9 +63,14 @@ def main() -> None:
     y4m = make_y4m()
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    next_bin = WEB_ROOT / "node_modules" / "next" / "dist" / "bin" / "next"
+    if not next_bin.exists():
+        raise SystemExit(f"{next_bin} not found — run `npm install` in web/ first")
+    if not (WEB_ROOT / ".next").exists():
+        raise SystemExit("web/.next not found — run `npm run build` in web/ first")
+
     server = subprocess.Popen(
-        ["node", str(WEB_ROOT / "node_modules" / "next" / "dist" / "bin"
-                     / "next"), "start", "-p", str(PORT)],
+        ["node", str(next_bin), "start", "-p", str(PORT)],
         cwd=WEB_ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         wait_for_port(PORT)
@@ -72,13 +86,19 @@ def main() -> None:
             page.on("console", lambda m: console.append(f"[{m.type}] {m.text}"))
 
             page.goto(f"http://127.0.0.1:{PORT}/")
-            page.click("text=Start camera")
-            # model load + 30 frames at 10 FPS before the first inference
+            # Model load (WASM download) + camera start + filling the 3.0 s
+            # window (CONTRACT.md §6 Amendment 1: one prediction per 3 s, not
+            # the old 2 Hz stride) before the first prediction exists.
+            # 90 s is a CI-cold-start budget, not the expected wait.
             page.wait_for_function(
-                "window.__ENGINE_STATE && "
-                "window.__ENGINE_STATE.prediction !== null",
+                "window.__ENGINE_STATE && window.__ENGINE_STATE.prediction !== null",
                 timeout=90_000)
-            time.sleep(2)  # let a few more inferences smooth the UI
+            # Let a SECOND 3 s window land too, so the screenshot/state
+            # isn't just the first-ever (possibly still-settling) prediction.
+            # Must exceed one full inference window (3 s) — 2 s here was a
+            # leftover 2 Hz-era assumption that never actually caught a
+            # second prediction under the current cadence.
+            time.sleep(4)
             state = page.evaluate("window.__ENGINE_STATE")
             page.screenshot(path=str(RESULTS_DIR / "app_screenshot.png"),
                             full_page=True)
@@ -86,21 +106,19 @@ def main() -> None:
 
         pred = state["prediction"]
         prob_sum = sum(pred["engagement"])
+        level = pred["engagement"].index(max(pred["engagement"]))
         checks = {
+            "status": state["status"],
             "face_present": bool(state["facePresent"]),
-            "window_full": state["bufferFill"] == 30,
             "probs_sum_to_1": abs(prob_sum - 1.0) < 1e-3,
-            "label_valid": pred["engagementLabel"] in
-                ["very low", "low", "engaged", "very engaged"],
-            "landmark_ms": state["stats"]["landmarkMs"],
-            "infer_ms": state["stats"]["inferMs"],
-            "effective_fps": state["stats"]["effectiveFps"],
+            "engagement_level": level,
+            "engagement_label": LEVELS[level],
             "engagement_probs": pred["engagement"],
-            "engagement_label": pred["engagementLabel"],
             "state_probs": pred["states"],
+            "infer_ms": pred["ms"],
         }
-        ok = (checks["face_present"] and checks["window_full"]
-              and checks["probs_sum_to_1"] and checks["label_valid"])
+        ok = (checks["status"] == "live" and checks["face_present"]
+              and checks["probs_sum_to_1"])
         checks["ok"] = ok
         with open(RESULTS_DIR / "app_e2e.json", "w") as fh:
             json.dump(checks, fh, indent=1)

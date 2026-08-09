@@ -1,6 +1,6 @@
 # INTERFACE CONTRACT — Track A (ML) ↔ Track B (Web)
 
-**Version 1.1 — Day 1; §6 Amendment 1 on 2026-08-03**
+**Version 1.2 — Day 1; §6 Amendment 1 on 2026-08-03; Amendment 2 on 2026-08-09**
 **Status of each section: FROZEN unless marked OPEN.**
 
 This document is the single source of truth for everything that crosses the
@@ -225,9 +225,54 @@ enforced by an `assert` in code, not a comment.
 
 ---
 
+---
+
+## Amendment 2 — J1 parity tolerance, and why numFaces:1 feeds the model (2026-08-09)
+
+> **Agreed by both partners, 2026-08-09**, when the J1 gate was rebuilt
+> after `web/harness/parity.html` was found to import a file deleted in
+> the `cc4f5c8` merge (silently validating code that no longer existed).
+
+**Tolerance: 0.02 max-abs-diff per feature** (after excluding
+`face_present` mismatches), not the original 1e-4 from
+`BUILD_PLAN_1.md` §J1. Python (`mediapipe.tasks.python`) and the browser
+(`@mediapipe/tasks-vision`) run the same `.task` model on the same CPU/
+XNNPACK delegate but are different runtimes (native vs WASM); this
+produces small, expected sub-pixel landmark noise, not a train/serve bug.
+0.02 is the value the team empirically validated: worst-case observed
+diff is 0.0079–0.016 depending on harness (`docs/results/parity_report.json`),
+comfortably under tolerance, while still tight enough to catch a real
+skew (see below).
+
+**GPU delegate excluded, CPU delegate required.** The GPU delegate shifts
+landmarks enough to fail even the loosened tolerance —
+`docs/results/parity_report_gpu.json` records `gaze_y` at 0.05, over 2×
+tolerance. `lib/faceLandmarker.ts` pins `delegate: 'CPU'` for this reason;
+this is not optional.
+
+**`numFaces` changes landmark output even for the one real face in
+frame.** Rebuilding J1 to test the app's actual production landmarker
+config (`numFaces: 4`, added for multi-face overlay support, commit
+`c16cd9a`) surfaced a real, previously-undetected regression: on frames
+where the subject is blinking, `numFaces: 4` produces a `gaze_y` diff of
+up to **0.86** (out of a ~−1..1 range) against the Python reference —
+`numFaces: 1` on the identical frames measures 0.016. The old
+hand-rolled harness always used its own `numFaces: 1` instance regardless
+of what production shipped, so it never could have caught this.
+
+**Resolution:** `lib/faceLandmarker.ts` exports two factories.
+`createFeatureLandmarker()` (`numFaces: 1`) is the **only** landmarker
+ever allowed to feed `computeFeatures()` — this matches
+`ml/src/extract.py`, which always runs `num_faces=1`, so the model never
+trained on `numFaces > 1` landmark noise. `createDisplayLandmarker()`
+(`numFaces: 4`) drives the on-screen multi-face overlay and "People"
+count only, and its output must never reach `computeFeatures()`. Costs a
+second WASM detection pass per sampled frame.
+
 ## Sign-off
 
 | Partner | Track | Date | Signed |
 |---|---|---|---|
 | Bilal | A — ML pipeline | 2026-08-03 | ☑ |
 | Azeem | B — Web app | 2026-08-03 | ☑ |
+| Both | Amendment 2 (J1 rebuild, numFaces fix) | 2026-08-09 | ☑ |

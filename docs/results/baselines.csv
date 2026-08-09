@@ -1,0 +1,13 @@
+split,model,macro_f1,accuracy
+Validation,majority,0.1813,0.5689
+Validation,logreg,0.242,0.3109
+Validation,random_forest,0.2669,0.5263
+Validation,majority_3class_merged,0.2417,0.5689
+Validation,logreg_3class_merged,0.3282,0.3357
+Validation,random_forest_3class_merged,0.3559,0.5264
+Test,majority,0.1655,0.4948
+Test,logreg,0.2479,0.354
+Test,random_forest,0.2643,0.5054
+Test,majority_3class_merged,0.2207,0.4948
+Test,logreg_3class_merged,0.337,0.3715
+Test,random_forest_3class_merged,0.3536,0.5056

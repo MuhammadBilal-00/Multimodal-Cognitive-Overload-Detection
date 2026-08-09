@@ -19,13 +19,15 @@ first.**
 ```mermaid
 flowchart TD
     subgraph Browser["Browser — single origin, self-hosted assets, nothing leaves"]
-        Cam["Webcam\ngetUserMedia"] -->|"raw, un-mirrored\nvideo element"| Det
+        Cam["Webcam\ngetUserMedia"] -->|"raw, un-mirrored\nvideo element"| DetF
+        Cam -->|"raw, un-mirrored\nvideo element"| DetD
 
         subgraph Loop["rAF loop — display 30+ fps, sampled 10 Hz"]
-            Det["MediaPipe FaceLandmarker\n478 landmarks (incl. iris), WASM"]
+            DetF["FaceLandmarker (numFaces:1)\n478 landmarks (incl. iris), WASM\nfeeds the model"]
+            DetD["FaceLandmarker (numFaces:4)\ndisplay only — overlay + People count"]
             Feat["features.ts\n13 floats, CONTRACT.md §2-4"]
             Buf["RingBuffer\n30 frames = 3.0 s window"]
-            Det -->|"10 Hz"| Feat --> Buf
+            DetF -->|"10 Hz"| Feat --> Buf
         end
 
         Buf -->|"isFull(), every 30th sample = every 3 s"| Std["standardise()\n(x-mean)/std via scaler.json"]
@@ -146,9 +148,9 @@ the archive plus extracted frames.
 - [x] Days 14–15 — **final test-set evaluation (run exactly once, 2026-08-02)**: fp32 macro-F1 **0.2475** vs majority floor 0.1655; int8 0.2460 (Δ −0.0015); 3-class merged 0.3318; J3 browser benchmarks archived
 - [x] 2026-08-03 — Track A + Track B repositories merged (unrelated histories); real trained model kept, Azeem's app canonical in `web/`
 - [x] 2026-08-03 — CONTRACT.md v1.1 (§6 Amendment 1: 3 s prediction cadence), both partners signed; multi-face detection (up to 4, primary-face prediction, People count); landmarker pinned to CPU delegate per parity evidence
-- [ ] A5 baselines (reserved for the FYP student — inputs ready in `artifacts/dataset/`)
+- [x] 2026-08-09 — Gap-closure pass: J1 rebuilt as a real Playwright Test (caught and fixed a real `numFaces:4` parity regression — see CONTRACT.md Amendment 2, v1.2); A5 baselines (`docs/results/baselines.csv`); J3 benchmark collector rewritten + re-run; J2 e2e script fixed and re-run; CI added (`.github/workflows/ci.yml`)
 - [ ] Thesis writeup: methodology, error analysis (class 0 has only 4 test clips; adjacent-class confusion dominates)
-- [ ] Re-point `ml/scripts/` browser gates (e2e, benchmarks) at the merged app
+- [ ] Two more J3 benchmark machines (runbook: `docs/benchmarks/README.md`)
 
 Full day-by-day record: `docs/PROGRESS.md`.
 

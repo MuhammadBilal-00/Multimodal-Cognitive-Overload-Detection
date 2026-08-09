@@ -1,4 +1,4 @@
-# Project Progress — as of 2026-08-03
+# Project Progress — as of 2026-08-09
 
 Privacy-preserving cognitive state detection in the browser: a temporal
 convolutional network trained on DAiSEE, quantized to int8 ONNX, running
@@ -11,7 +11,8 @@ leaves the user's machine.
   feature extraction, inference, dashboard, benchmarking
 
 `CONTRACT.md` is the frozen interface contract between the tracks
-(currently **v1.1**, both partners signed 2026-08-03).
+(currently **v1.2**, both partners signed 2026-08-03, Amendment 2 on
+2026-08-09).
 
 ## Timeline
 
@@ -26,6 +27,7 @@ leaves the user's machine.
 | 14–15 | 2026-08-02 | **Final test-set evaluation — run exactly once, after model freeze**: see headline table below. J3 browser benchmarks archived (`docs/results/browser_benchmark.json`). |
 | — | 2026-08-01→03 | In parallel, Track B built the full web app in its own repository against a dummy model with contract-identical I/O (`scripts/make_dummy_onnx.py`), so it was never blocked on training. |
 | — | 2026-08-03 | **Repository merge** (see below), CONTRACT.md v1.1 amendment, multi-face support, 3 s prediction cadence. |
+| — | 2026-08-09 | **Gap-closure pass** (see below): J1 rebuilt for real (caught and fixed a `numFaces` regression), A5 baselines, J3 refreshed, J2 fixed, CI added. CONTRACT.md v1.2 (Amendment 2). |
 
 ## Headline results (Test split, 14,241 windows, evaluated once)
 
@@ -99,33 +101,88 @@ lived in its own GitHub repo, not a fork). Merged with
   the model was trained on CPU/XNNPACK-extracted features and the GPU
   delegate fails the J1 parity gate (`docs/results/parity_report_gpu.json`).
 
+## Gap-closure — 2026-08-09
+
+A self-audit against live repo state (not just recollection) found that
+`cc4f5c8`'s merge had left three browser-driving scripts stale — pointing
+at routes/globals the merge itself deleted — and that the recorded J1
+"PASS" therefore validated code that no longer existed. Full writeup:
+`GAP_CLOSURE_PLAN.md`. Fixed:
+
+- **J1 rebuilt** as a real Playwright Test (`web/tests/e2e/features.parity.test.ts`,
+  `web/app/parity-test/`) against 100 pre-extracted static PNG frames
+  instead of a seeked `<video>` (headless Chromium doesn't reliably
+  present seeked frames). Reuses the production landmarker factory rather
+  than a hand-rolled second instance — and that reuse **caught a real,
+  previously-undetected regression**: production's `numFaces: 4`
+  (multi-face overlay, commit `c16cd9a`) shifts landmarks enough to fail
+  parity on blink frames (`gaze_y` diff up to 0.86 vs 0.016 at
+  `numFaces: 1`). Fixed by splitting `lib/faceLandmarker.ts` into
+  `createFeatureLandmarker()` (`numFaces: 1`, feeds the model — matches
+  `ml/src/extract.py`) and `createDisplayLandmarker()` (`numFaces: 4`,
+  overlay/People-count only); `usePipeline.ts` now runs both. Tolerance
+  (0.02) and this split are recorded as CONTRACT.md Amendment 2.
+- **A5 baselines** (`ml/src/baselines.py`, new) — logistic regression +
+  random forest on 65-dim aggregate features, both Validation and Test
+  splits, `docs/results/baselines.csv`. Majority-class rows cross-checked
+  exactly against `metrics_{validation,test}.csv`'s own majority baseline
+  (0.1813 / 0.1655). The TCN (val macro-F1 0.3061) beats both classical
+  baselines (logreg 0.242, RF 0.2669).
+- **J3 refreshed** — `web/lib/benchmark.ts` now records
+  `hardwareConcurrency`/`deviceMemory`; `ml/scripts/collect_benchmark.py`
+  rewritten against the current app (was targeting a deleted `/bench`
+  page) and driven by `page.on("download")`, not a `window` global. One
+  real run recorded: `docs/benchmarks/benchmark-dev-i7-13700H-16GB.json`.
+  Runbook for the other two required machines: `docs/benchmarks/README.md`.
+- **J2 fixed** — `ml/scripts/e2e_app_test.py` was polling a
+  `window.__ENGINE_STATE` that didn't exist and clicking a "Start camera"
+  button the app no longer has (camera now auto-starts). Added a minimal
+  `window.__ENGINE_STATE` mirror in `usePipeline.ts`
+  (`{status, prediction, facePresent}`), retargeted the script, fixed a
+  leftover 2 Hz-era `time.sleep(2)` to 4 s (must exceed the current 3 s
+  inference window). Re-ran: fresh `app_e2e.json` / `app_screenshot.png`,
+  `ok: true`.
+- **CI added** (`.github/workflows/ci.yml`) — vitest + typecheck and
+  `pytest ml/tests/` run unconditionally; the J1 Playwright gate runs only
+  when `ml/tests/fixtures/parity_frames/*.png` are present on the runner,
+  since those PNGs are DAiSEE-derived and (like the clip they're sampled
+  from) can never be committed to git under the dataset license — a
+  constraint that predates this session and was never actually solved by
+  the original design either (there was no CI at all before). Skips with
+  a visible warning rather than silently passing or failing every push.
+- Fixed a stale doc claim: `docs/architecture.md` said "GPU delegate with
+  CPU fallback"; the app has been CPU-only since the numFaces work in
+  `c16cd9a`, and CPU-only is required for J1 parity regardless (Amendment 2).
+
 ## Artifact index
 
 | Artifact | What it is |
 |---|---|
 | `docs/results/extraction_stats.json` | 9,032-clip extraction: failures, detection rate |
 | `docs/results/class_dist.png` | DAiSEE label distribution |
-| `docs/results/parity_report.json` | J1 Python↔browser feature parity (CPU delegate, PASS) |
+| `docs/results/parity_report.json` | J1 Python↔browser feature parity (rebuilt harness, `numFaces:1` feature path, PASS — worst diff 0.0157) |
 | `docs/results/parity_report_gpu.json` | Same gate with GPU delegate (FAIL — why CPU is pinned) |
+| `docs/results/baselines.csv` | A5: majority / logreg / random-forest macro-F1 + accuracy, Validation & Test |
 | `docs/results/quantization.csv` | fp32 → int8 accuracy delta |
 | `docs/results/metrics_{validation,test}.csv` | Per-class P/R/F1, macro-F1, AUCs |
 | `docs/results/confusion_{validation,test}.png` | Confusion matrices |
 | `docs/results/roc_{validation,test}.png` | ROC curves |
 | `docs/results/browser_smoke.json` | A6.5: int8 ONNX runs in onnxruntime-web |
-| `docs/results/browser_benchmark.json` | J3: in-browser latency percentiles |
-| `docs/results/app_e2e.json`, `app_screenshot.png` | Fake-webcam end-to-end app test |
+| `docs/results/browser_benchmark.json` | Legacy J3 artifact (deleted `/bench` page era: int8 vs fp32 + separate landmark timing) — superseded by `docs/benchmarks/`, kept for history |
+| `docs/results/app_e2e.json`, `app_screenshot.png` | J2 fake-webcam end-to-end app test (refreshed 2026-08-09) |
 | `docs/verification/landmarks_{overview,zoom}.png` | Visual landmark-index verification |
-| `docs/benchmarks/benchmark-dummy-model-dev-machine.json` | Track B benchmark harness output (dummy model era) |
+| `docs/benchmarks/benchmark-dev-i7-13700H-16GB.json` | J3: real int8 model, this dev machine (2026-08-09) |
+| `docs/benchmarks/benchmark-dummy-model-dev-machine.json` | Legacy Track B benchmark harness output (dummy-model era) — kept for history, not a valid J3 data point |
+| `docs/benchmarks/README.md` | J3 runbook: how to add the other two required machines |
 
 ## Open items
 
-- **A5 classical baselines** — reserved for the FYP student; inputs ready
-  in `artifacts/dataset/`.
+- **Two more J3 machines** — BUILD_PLAN_1.md §J3 wants ≥3 machines; only
+  this dev machine is recorded. Runbook: `docs/benchmarks/README.md`.
 - **Thesis writeup** — methodology, error analysis (class 0 sparsity,
-  adjacent-class confusion), results tables from `docs/results/`.
-- **Stale browser-gate scripts** — `ml/scripts/e2e_app_test.py`,
-  `browser_tests.py`, `collect_benchmark.py` still target the deleted JS
-  scaffold routes and must be rewritten against the current app; when they
-  are, prediction-wait timeouts must account for the 3 s cadence.
-- Re-run J3 benchmarks / e2e against the merged app with the real model on
-  the current UI.
+  adjacent-class confusion), results tables from `docs/results/`
+  (including the new `baselines.csv` comparison table).
+- **CI not yet observed green on GitHub** — `.github/workflows/ci.yml` is
+  written and locally sanity-checked (YAML valid; the J1 gate was proven
+  to catch a deliberately-broken feature formula, run locally), but has
+  not yet actually been pushed and watched run on GitHub Actions.

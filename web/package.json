@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "test:parity": "playwright test",
     "assets": "node scripts/copy-assets.mjs",
     "postinstall": "node scripts/copy-assets.mjs"
   },
