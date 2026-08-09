@@ -115,29 +115,45 @@ Uses the runbook `GAP_CLOSURE_PLAN.md` Part 3 produces (`docs/benchmarks/README.
 
 ## Phase 3 — Thesis writeup
 
-> **Status (2026-08-09): On hold, per your instruction** — waiting on
-> your university's thesis template/format, page/word targets, and
-> submission/defense dates (§3.2 below). Nothing in §3.1 has changed;
-> it's all still there, ready, whenever you're ready to start.
+> **Status (2026-08-09): First full draft complete.** Once
+> `MSc Final Report Template Data Modelling.docx` (chapter structure) and
+> `MScProject_Marking Scheme 2025_26.docx` (word count 10,000–15,000;
+> Harvard referencing; four equally-weighted assessed sections) were
+> supplied, §3.2's blockers were resolved except submission/defense
+> dates. Full draft: `docs/thesis/FYP_Report.md` (source) and
+> `docs/thesis/FYP_Report.docx` (generated, ready to open in Word) —
+> 10,032 words main body / 11,492 total, mapped onto the template's exact
+> chapter structure (Introduction → Literature Review → Methodology →
+> Experimentation → Conclusion, each sub-numbered as the template
+> specifies), 13 references in Harvard style — every one individually
+> verified via web search before inclusion, none fabricated. Every
+> figure/table/number in the draft is drawn from this repository's own
+> produced artefacts (`docs/results/`, `docs/privacy.md`,
+> `docs/demo-failure-modes.md`), fact-checked against the underlying CSV/
+> JSON a second time during drafting (two numeric errors caught and fixed
+> this way: a mixed-split percentage, and a size-reduction ratio).
+> Remaining before submission: the bracketed placeholders (name, banner
+> ID, supervisor, dates), inserting the actual figure images/table
+> captions where marked, and a supervisor review pass.
 
 The largest open item — `docs/PROGRESS.md`'s own open-items list names it first, and it's the one part of this whole plan with no code-level acceptance test. Nearly everything it needs already exists in `docs/results/`; this phase is assembly and writing, not new experiments.
 
 ### 3.1 Already available to draft from (all real, already produced)
 - **Methodology / system design** — `CONTRACT.md`'s feature definitions, `ml/src/model.py`'s TCN architecture, `ml/src/train.py`'s training regime, `docs/architecture.md`'s stage-by-stage browser pipeline (once Phase 0 fixes its stale GPU-delegate line) are direct source material, not things to re-derive.
-- **Results / evaluation** — `metrics_{validation,test}.csv`, confusion matrices, ROC curves, `class_dist.png`, `quantization.csv`, `baselines.csv` (Phase 0), the multi-machine benchmark table (Phase 2).
-- **A known limitation to state plainly, not hide**: engagement class 0 has only 4 test clips (`docs/PROGRESS.md`), so its per-class metrics are statistically unmeasurable, and adjacent-class confusion dominates the errors. BUILD_PLAN_1.md's own risk register says a properly-analyzed negative/weak result passes review and a fabricated one fails — this is exactly that situation.
-- **Privacy** — `docs/privacy.md` is already a rigorous, evidence-backed section (real network capture, a caught telemetry call) — adapt directly rather than rewriting.
+- **Results / evaluation** — `metrics_{validation,test}.csv`, confusion matrices, ROC curves, `class_dist.png`, `quantization.csv`, `baselines.csv` (Phase 0), the multi-machine benchmark table (Phase 2, still 1 of 3 machines — the draft states this honestly rather than assuming completion).
+- **A known limitation to state plainly, not hide**: engagement class 0 has only 4 test clips (`docs/PROGRESS.md`), so its per-class metrics are statistically unmeasurable, and adjacent-class confusion dominates the errors. BUILD_PLAN_1.md's own risk register says a properly-analyzed negative/weak result passes review and a fabricated one fails — this is exactly that situation, and it is Section 4.3.3/5.2.2 of the draft.
+- **Privacy** — `docs/privacy.md` is already a rigorous, evidence-backed section (real network capture, a caught telemetry call) — adapted directly into Section 4.4 rather than rewritten.
 
-### 3.2 Needs your input (can't be derived from this repo)
-- Your university's required thesis structure/template — chapter breakdown, formatting rules, citation style beyond the two DAiSEE papers already cited in `README.md`.
-- Page/word count targets.
-- Submission deadline and defense date — needed to actually pace the rest of this phase.
+### 3.2 Needs your input (resolved except dates)
+- ~~Your university's required thesis structure/template~~ — **supplied 2026-08-09**, followed exactly.
+- ~~Page/word count targets~~ — **supplied 2026-08-09** (marking scheme: 10,000–15,000 words); draft is at 10,032/11,492.
+- Submission deadline and defense date — still needed, only to pace the *remaining* steps (placeholder completion, supervisor review), not to write further content.
 
-### 3.3 Suggested checkpoints (re-map to your actual template once you have it)
-- **3a** — Methodology / system design chapter drafted.
-- **3b** — Results / evaluation chapter drafted, including the honest class-0 discussion and the A5 baseline comparison.
-- **3c** — Privacy/ethics section drafted.
-- **3d** — Full draft assembled, supervisor review pass complete.
+### 3.3 Checkpoints, mapped onto the actual template
+- **3a** — Methodology / system design chapter drafted — **done** (`docs/thesis/FYP_Report.md` §3).
+- **3b** — Results / evaluation chapter drafted, including the honest class-0 discussion and the A5 baseline comparison — **done** (§4, Experiments 2–3).
+- **3c** — Privacy/ethics section drafted — **done** (§4.4, §3.3).
+- **3d** — Full draft assembled — **done**; supervisor review pass — **not done**, needs the user/supervisor.
 
 ---
 
@@ -210,7 +226,7 @@ Direct continuation of BUILD_PLAN_1.md's own Day 20 gate.
 | Student can walk the pipeline unaided | Materials ready (`docs/student-handoff.md`); the actual session is still to happen | Phase 4 |
 | Live dry-run rehearsal | Script ready (`docs/dry-run-checklist.md`); not yet run for real | Phase 5.1 |
 | *(not in original DoD, added by audit)* CI wired at all | **Done** | Phase 0 |
-| *(tracked separately in `docs/PROGRESS.md`)* Thesis writeup | On hold, per your instruction — waiting on your template/dates | Phase 3 |
+| *(tracked separately in `docs/PROGRESS.md`)* Thesis writeup | **First full draft done** (`docs/thesis/FYP_Report.md`/`.docx`, 10,032/11,492 words, Harvard refs) — placeholders + supervisor review remain | Phase 3 |
 
 ---
 

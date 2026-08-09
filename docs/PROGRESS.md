@@ -204,10 +204,15 @@ All three Phase 1 sub-phases done same day as gap-closure. Full findings:
 - **Two more J3 machines** — BUILD_PLAN_1.md §J3 wants ≥3 machines; only
   this dev machine is recorded. Runbook: `docs/benchmarks/README.md`.
   Blocked on machine availability (PROJECT_COMPLETION_PLAN.md Phase 2).
-- **Thesis writeup** — on hold, per instruction, until university
-  template/format, page/word targets, and submission/defense dates are
-  available. Everything else it needs already exists in `docs/results/`
-  (including `baselines.csv`) — PROJECT_COMPLETION_PLAN.md §3.1.
+- **Thesis writeup — first full draft done (2026-08-09)**, once the
+  university report template and marking scheme were supplied:
+  `docs/thesis/FYP_Report.md` / `.docx`, 10,032 words main body / 11,492
+  total (target 10,000–15,000), Harvard referencing throughout (13
+  citations, each individually verified real via web search before use —
+  none fabricated), mapped onto the template's exact chapter structure.
+  Remaining: fill in the bracketed placeholders (name, banner ID,
+  supervisor, dates), insert the actual figure/table images where marked,
+  and a supervisor review pass — PROJECT_COMPLETION_PLAN.md §3.
 - **One manual Firefox check** — Playwright can't feed Firefox a
   file-backed fake camera the way it can Chromium, so Firefox's
   real-face detection (as opposed to load/init/no-face-path) hasn't been

@@ -159,7 +159,7 @@ the archive plus extracted frames.
 - [x] 2026-08-03 — CONTRACT.md v1.1 (§6 Amendment 1: 3 s prediction cadence), both partners signed; multi-face detection (up to 4, primary-face prediction, People count); landmarker pinned to CPU delegate per parity evidence
 - [x] 2026-08-09 — Gap-closure pass: J1 rebuilt as a real Playwright Test (caught and fixed a real `numFaces:4` parity regression — see CONTRACT.md Amendment 2, v1.2); A5 baselines (`docs/results/baselines.csv`); J3 benchmark collector rewritten + re-run; J2 e2e script fixed and re-run; CI added (`.github/workflows/ci.yml`)
 - [x] 2026-08-09 — Hardening pass (`PROJECT_COMPLETION_PLAN.md` Phase 1): clean-clone install verified (found + fixed a real README gap); Chrome/Edge/Firefox cross-browser check (COOP/COEP confirmed honored in all three); five demo failure-mode scenarios tested clean — `docs/demo-failure-modes.md`
-- [ ] Thesis writeup: methodology, error analysis (class 0 has only 4 test clips; adjacent-class confusion dominates)
+- [x] 2026-08-09 — Thesis: first full draft complete (`docs/thesis/FYP_Report.md`/`.docx`), Harvard referencing, matched to the supplied university template and marking scheme; placeholders + supervisor review still pending
 - [ ] Two more J3 benchmark machines (runbook: `docs/benchmarks/README.md`)
 - [ ] Student handoff walkthrough + freeze/tag (`PROJECT_COMPLETION_PLAN.md` Phases 4–5)
 
