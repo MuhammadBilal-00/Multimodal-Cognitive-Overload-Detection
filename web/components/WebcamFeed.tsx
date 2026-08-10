@@ -59,7 +59,7 @@ export default function WebcamFeed({
   }, []);
 
   return (
-    <div className="relative w-full aspect-[4/3] bg-black rounded-xl overflow-hidden">
+    <div className="relative w-full aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-900 shadow-sm">
       {/* Raw frame goes to the landmarker; mirroring is CSS-only (contract 4.2) */}
       <video
         ref={videoRef}
@@ -68,6 +68,11 @@ export default function WebcamFeed({
         className="h-full w-full object-cover"
         style={mirrored ? { transform: 'scaleX(-1)' } : undefined}
       />
+      {state === 'active' && (
+        <span className="absolute bottom-3 left-3 rounded-full bg-black/55 px-3 py-1 text-sm font-medium text-white backdrop-blur">
+          You
+        </span>
+      )}
       {state !== 'active' && (
         <div className="absolute inset-0 grid place-items-center bg-zinc-950/90 p-6 text-center text-zinc-300">
           {MESSAGES[state]}

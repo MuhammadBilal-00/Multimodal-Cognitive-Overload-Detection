@@ -23,16 +23,16 @@ export default function BenchmarkPanel() {
   }
 
   return (
-    <section className="rounded-2xl bg-zinc-900 p-6">
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Benchmark</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--foreground-muted)]">Benchmark</h2>
         <button onClick={go} disabled={running}
-          className="rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-zinc-950 disabled:opacity-50">
+          className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1765cc] disabled:opacity-50">
           {running ? 'Running 300 cycles…' : 'Run 300 inferences'}
         </button>
       </div>
       {result && (
-        <pre className="mt-4 text-sm text-zinc-300">
+        <pre className="mt-4 whitespace-pre-wrap font-mono text-sm text-[var(--foreground-muted)]">
 {`mean ${result.meanMs.toFixed(2)} ms   p50 ${result.p50.toFixed(2)}   p95 ${result.p95.toFixed(2)}   p99 ${result.p99.toFixed(2)}
 ${result.meanFps.toFixed(0)} inferences/s   heap Δ ${result.heapDeltaMB?.toFixed(2) ?? 'n/a'} MB`}
         </pre>
