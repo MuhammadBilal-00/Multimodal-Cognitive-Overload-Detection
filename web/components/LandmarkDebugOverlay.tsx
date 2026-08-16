@@ -4,6 +4,7 @@ import {
   type Landmark, LEFT_EYE_EAR, RIGHT_EYE_EAR, MOUTH, LEFT_BROW, RIGHT_BROW,
   NOSE_TIP, CHIN, LEFT_IRIS, RIGHT_IRIS, INTEROCULAR,
 } from '../lib/features';
+import { coverFit } from '../lib/overlayFit';
 
 // Visual verification tool for CONTRACT.md section 4 ("verify visually on
 // Day 3 — draw the indices on a still frame and check each sits where it
@@ -23,8 +24,12 @@ const GROUPS: { indices: number[]; labels: string[]; color: string }[] = [
 ];
 
 export default function LandmarkDebugOverlay({
-  landmarks, mirrored = true,
-}: { landmarks: Landmark[] | null; mirrored?: boolean }) {
+  landmarks, videoSize, mirrored = true,
+}: {
+  landmarks: Landmark[] | null;
+  videoSize: { w: number; h: number };
+  mirrored?: boolean;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -33,7 +38,9 @@ export default function LandmarkDebugOverlay({
     ctx.clearRect(0, 0, c.width, c.height);
     if (!landmarks) return;
 
-    const px = (l: Landmark) => ({ x: (mirrored ? 1 - l.x : l.x) * c.width, y: l.y * c.height });
+    // Match object-cover so labelled points sit on the real features.
+    const fit = coverFit(videoSize.w, videoSize.h, c.width, c.height, mirrored);
+    const px = (l: Landmark) => ({ x: fit.x(l.x), y: fit.y(l.y) });
 
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     for (const l of landmarks) {
@@ -72,8 +79,8 @@ export default function LandmarkDebugOverlay({
       ctx.arc(x, y, 6, 0, Math.PI * 2);
       ctx.stroke();
     }
-  }, [landmarks, mirrored]);
+  }, [landmarks, videoSize, mirrored]);
 
-  return <canvas ref={ref} width={640} height={480}
+  return <canvas ref={ref} width={640} height={480} aria-hidden="true"
     className="pointer-events-none absolute inset-0 h-full w-full" />;
 }

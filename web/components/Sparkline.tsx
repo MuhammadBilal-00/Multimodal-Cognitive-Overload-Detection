@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface TrendSeries {
   name: string;
@@ -14,8 +14,23 @@ export interface TrendSeries {
 // read as a placeholder rather than the model's actual confidence.
 export default function TrendChart({ series, height = 96 }: { series: TrendSeries[]; height?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const width = 560;
+  // Measured, not hardcoded: the canvas's CSS width is 100% of its container
+  // (see the returned <canvas> below), but the backing store used to be a
+  // fixed 560px regardless — stretching/blurring the line art on any
+  // container narrower than that. 560 here is only the pre-measurement
+  // fallback for the first paint.
+  const [width, setWidth] = useState(560);
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      if (w > 0) setWidth(w);
+    });
+    ro.observe(c);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const c = ref.current; if (!c) return;
@@ -65,7 +80,7 @@ export default function TrendChart({ series, height = 96 }: { series: TrendSerie
       ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
       ctx.fill();
     });
-  }, [series, dpr, height]);
+  }, [series, dpr, height, width]);
 
   return <canvas ref={ref} style={{ width: '100%', height }} className="block" />;
 }

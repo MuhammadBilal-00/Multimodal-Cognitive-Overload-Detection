@@ -74,7 +74,7 @@ export default function WebcamFeed({
         </span>
       )}
       {state !== 'active' && (
-        <div className="absolute inset-0 grid place-items-center bg-zinc-950/90 p-6 text-center text-zinc-300">
+        <div role="alert" className="absolute inset-0 grid place-items-center bg-zinc-950/90 p-6 text-center text-zinc-300">
           {MESSAGES[state]}
         </div>
       )}

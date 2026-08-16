@@ -9,6 +9,8 @@ Also evaluates the quantized ONNX model on the same split when
 Outputs into docs/results/:
   confusion_{split}.png            raw + row-normalised, side by side
   metrics_{split}.csv              per-class P/R/F1 + macro/weighted + acc
+  metrics_states_{split}.csv       secondary head: per-state P/R/F1 + AP/AUC
+                                   against each state's base rate
   roc_{split}.png                  one-vs-rest ROC + AUC
   quantization.csv                 (with --int8) fp32 vs int8 macro-F1/size
 
@@ -29,41 +31,49 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from sklearn.metrics import (
-    auc, confusion_matrix, f1_score, precision_recall_fscore_support,
-    roc_curve)
+    auc, average_precision_score, confusion_matrix, f1_score,
+    precision_recall_fscore_support, roc_auc_score, roc_curve)
 
 SRC_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SRC_DIR))
 REPO_ROOT = SRC_DIR.parent.parent
 
+from labels import LABEL_COLS  # noqa: E402
 from model import EngagementTCN  # noqa: E402
 
 LABELS = ["very low (0)", "low (1)", "engaged (2)", "very engaged (3)"]
 INK = "#333333"
 
 
-def predict_torch(checkpoint: Path, x: np.ndarray) -> np.ndarray:
+def predict_torch(checkpoint: Path,
+                  x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Returns (engagement_logits, states_logits)."""
     model = EngagementTCN()
     model.load_state_dict(torch.load(checkpoint, map_location="cpu",
                                      weights_only=True))
     model.eval()
-    logits = []
+    eng, states = [], []
     with torch.no_grad():
         for i in range(0, len(x), 512):
-            out, _ = model(torch.from_numpy(x[i:i + 512]))
-            logits.append(out.numpy())
-    return np.concatenate(logits)
+            out_eng, out_states = model(torch.from_numpy(x[i:i + 512]))
+            eng.append(out_eng.numpy())
+            states.append(out_states.numpy())
+    return np.concatenate(eng), np.concatenate(states)
 
 
-def predict_onnx(onnx_path: Path, x: np.ndarray) -> np.ndarray:
+def predict_onnx(onnx_path: Path,
+                 x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Returns (engagement_logits, states_logits)."""
     import onnxruntime as ort
     session = ort.InferenceSession(str(onnx_path),
                                    providers=["CPUExecutionProvider"])
-    logits = []
+    eng, states = [], []
     for i in range(0, len(x), 512):
-        out = session.run(["engagement"], {"features": x[i:i + 512]})[0]
-        logits.append(out)
-    return np.concatenate(logits)
+        out_eng, out_states = session.run(
+            ["engagement", "states"], {"features": x[i:i + 512]})
+        eng.append(out_eng)
+        states.append(out_states)
+    return np.concatenate(eng), np.concatenate(states)
 
 
 def plot_confusion(y_true, y_pred, split: str, out_dir: Path) -> None:
@@ -139,6 +149,52 @@ def metrics_rows(y_true, y_pred) -> list[list]:
     return rows
 
 
+def states_rows(y_states: np.ndarray, states_logits: np.ndarray) -> list[list]:
+    """Per-state metrics for the secondary multi-label head.
+
+    Until now this head was never scored anywhere in the project (train.py
+    discards the state targets in its eval loop; this file only ever looked at
+    `engagement`). It is trained with an UNWEIGHTED BCEWithLogitsLoss over very
+    imbalanced targets, so the thing that actually needs checking is whether it
+    learned anything beyond the base rate.
+
+    That is what the `prevalence` and `pred_rate` columns are for:
+      * pred_rate ~= 1.0 or ~= 0.0 while prevalence sits in between
+        => the head is just predicting the majority answer.
+      * average_precision ~= prevalence and roc_auc ~= 0.5
+        => no discriminative signal at all, regardless of how good the
+           accuracy column looks (accuracy is meaningless at 95% prevalence).
+    """
+    probs = 1.0 / (1.0 + np.exp(-states_logits))
+    pred = (probs >= 0.5).astype(int)
+    rows = []
+    for i, name in enumerate(LABEL_COLS):
+        true_i = y_states[:, i].astype(int)
+        pred_i = pred[:, i]
+        prob_i = probs[:, i]
+        prevalence = float(true_i.mean())
+        prec, rec, f1, _ = precision_recall_fscore_support(
+            true_i, pred_i, average="binary", zero_division=0)
+        # AUC/AP are undefined for a single-class column; emit "" not a crash.
+        if true_i.min() == true_i.max():
+            ap = auc_score = ""
+        else:
+            ap = round(float(average_precision_score(true_i, prob_i)), 4)
+            auc_score = round(float(roc_auc_score(true_i, prob_i)), 4)
+        rows.append([
+            name.lower(), i,
+            round(float(prec), 4), round(float(rec), 4), round(float(f1), 4),
+            ap, auc_score,
+            round(prevalence, 4), round(float(pred_i.mean()), 4),
+            round(float((true_i == pred_i).mean()), 4),
+            int(true_i.sum()), len(true_i),
+        ])
+    macro_f1 = float(np.mean([r[4] for r in rows]))
+    rows.append(["macro", "", "", "", round(macro_f1, 4), "", "", "", "", "",
+                 "", len(y_states)])
+    return rows
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
@@ -146,15 +202,29 @@ def main() -> None:
                         choices=["Validation", "Test"])
     parser.add_argument("--int8", type=Path, default=None,
                         help="also evaluate this ONNX model (quantization row)")
+    parser.add_argument("--dataset-dir", type=Path,
+                        default=REPO_ROOT / "artifacts" / "dataset",
+                        help="directory holding {split}.npz")
+    # Not just convenience: without it any smoke run overwrites the committed
+    # real metrics/figures in docs/results/ with throwaway numbers.
+    parser.add_argument("--out-dir", type=Path,
+                        default=REPO_ROOT / "docs" / "results",
+                        help="where to write metrics/figures")
     args = parser.parse_args()
 
-    out_dir = REPO_ROOT / "docs" / "results"
+    out_dir = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
-    data = np.load(REPO_ROOT / "artifacts" / "dataset" / f"{args.split}.npz")
+    npz_path = args.dataset_dir / f"{args.split}.npz"
+    if not npz_path.exists():
+        raise SystemExit(
+            f"{npz_path} not found — build it with `python ml/src/dataset.py` "
+            f"first (needs the DAiSEE dataset), or point --dataset-dir at an "
+            f"existing bundle.")
+    data = np.load(npz_path)
     x = data["x"]
     y = data["y_engagement"]
 
-    logits = predict_torch(args.checkpoint, x)
+    logits, states_logits = predict_torch(args.checkpoint, x)
     probs = np.exp(logits - logits.max(axis=1, keepdims=True))
     probs = probs / probs.sum(axis=1, keepdims=True)
     y_pred = logits.argmax(axis=1)
@@ -177,12 +247,26 @@ def main() -> None:
         writer.writerow(["class", "precision", "recall", "f1", "support"])
         writer.writerows(rows)
 
+    # Secondary multi-label head. Channel order is LABEL_COLS (Boredom,
+    # Engagement, Confusion, Frustration) — the browser mirrors it in
+    # web/lib/states.ts, and CONTRACT.md §5 documents it.
+    s_rows = states_rows(data["y_states"], states_logits)
+    with open(out_dir / f"metrics_states_{args.split.lower()}.csv", "w",
+              newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["state", "channel_index", "precision", "recall", "f1",
+                         "average_precision", "roc_auc", "prevalence",
+                         "pred_rate", "accuracy", "positives", "support"])
+        writer.writerows(s_rows)
+
     fp32_macro = f1_score(y, y_pred, average="macro", zero_division=0)
     print(f"{args.split}: fp32 macro-F1 {fp32_macro:.4f}")
     print(json.dumps({"auc": aucs}, indent=1))
+    print(f"states macro-F1 {s_rows[-1][4]} "
+          f"-> {out_dir / f'metrics_states_{args.split.lower()}.csv'}")
 
     if args.int8 is not None:
-        int8_logits = predict_onnx(args.int8, x)
+        int8_logits, _ = predict_onnx(args.int8, x)
         int8_pred = int8_logits.argmax(axis=1)
         int8_macro = f1_score(y, int8_pred, average="macro", zero_division=0)
         fp32_size = (REPO_ROOT / "artifacts" / "export"

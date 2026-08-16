@@ -2,12 +2,19 @@
 import { useState } from 'react';
 import { runBenchmark, type BenchmarkResult } from '../lib/benchmark';
 
-export default function BenchmarkPanel() {
+export default function BenchmarkPanel({
+  onRunningChange,
+}: { onRunningChange?: (running: boolean) => void }) {
   const [result, setResult] = useState<BenchmarkResult | null>(null);
   const [running, setRunning] = useState(false);
 
   async function go() {
     setRunning(true);
+    // Pause the live pipeline's own inference loop for the duration: it runs
+    // against the same module-level ONNX session (lib/inference.ts) this
+    // benchmark calls into, so without this both contend for the same WASM
+    // thread pool and the reported numbers include live-pipeline overhead.
+    onRunningChange?.(true);
     try {
       const r = await runBenchmark(300);
       setResult(r);
@@ -19,6 +26,7 @@ export default function BenchmarkPanel() {
       URL.revokeObjectURL(a.href);
     } finally {
       setRunning(false);
+      onRunningChange?.(false);
     }
   }
 

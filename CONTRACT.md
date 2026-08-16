@@ -1,6 +1,6 @@
 # INTERFACE CONTRACT — Track A (ML) ↔ Track B (Web)
 
-**Version 1.2 — Day 1; §6 Amendment 1 on 2026-08-03; Amendment 2 on 2026-08-09**
+**Version 1.3 — Day 1; §6 Amendment 1 on 2026-08-03; Amendment 2 on 2026-08-09; §5 Amendment 3 on 2026-08-14**
 **Status of each section: FROZEN unless marked OPEN.**
 
 This document is the single source of truth for everything that crosses the
@@ -157,6 +157,42 @@ OUTPUT  "states"       [1, 4]       float32   raw logits
 Standardisation `(x − mean) / std` happens **outside** the model, in the
 caller, using `scaler.json`.
 
+> **Amendment 3 — 2026-08-14 (states channel order).** The four `states`
+> channels were fixed by implementation from Day 1 but never written down
+> here, and Track B consequently consumed them in a different order than
+> Track A emits them: `web/components/PredictionPanel.tsx` rendered
+> Bored / Confused / Engaged / Frustrated against channels 0/1/2/3,
+> swapping channels 1 and 2, so the bar labelled "Confused" was in fact
+> displaying P(engagement). The order is hereby recorded **unchanged**, as
+> it has always been produced:
+>
+> ```
+> states[0]   boredom
+> states[1]   engagement
+> states[2]   confusion
+> states[3]   frustration
+> ```
+>
+> This is `LABEL_COLS` in `ml/src/labels.py`, lower-cased by
+> `binarize_states()` and written to `artifacts/dataset/*.npz` as
+> `y_states` by `ml/src/dataset.py`. Each channel is an **independent
+> binary** target — `1` where that state's DAiSEE level is `>= 2`
+> (`labels.py: STATE_THRESHOLD`) — trained with `BCEWithLogitsLoss`. The
+> four sigmoid outputs are therefore four one-vs-rest likelihoods and
+> **do not sum to 1**; a UI must not present them as a distribution.
+>
+> Note that `engagement` (the 4-class softmax head) and `states[1]`
+> (binary "engagement >= high") are two views of the same DAiSEE column
+> and can disagree. That is expected, not a bug.
+>
+> **No tensor name, shape, dtype, or numeric output changes** — this
+> amendment documents existing behaviour and mandates the Track B index
+> fix. Mirrored on the Track B side by `web/lib/states.ts`
+> (`STATE_CHANNELS`), which is now the only place the browser turns a
+> channel index into a name, and guarded by `web/tests/states.test.ts`,
+> which parses `ml/src/labels.py` directly so the two cannot silently
+> diverge again.
+
 ---
 
 ## 6. Sampling (FROZEN)
@@ -276,3 +312,4 @@ second WASM detection pass per sampled frame.
 | Bilal | A — ML pipeline | 2026-08-03 | ☑ |
 | Azeem | B — Web app | 2026-08-03 | ☑ |
 | Both | Amendment 2 (J1 rebuild, numFaces fix) | 2026-08-09 | ☑ |
+| Both | Amendment 3 (states channel order) | 2026-08-14 | ☐ |

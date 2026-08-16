@@ -36,7 +36,8 @@ function ToggleButton({
 }
 
 export default function CognitiveApp() {
-  const { status, error, landmarks, faces, primaryIndex, features, prediction, perf, onVideoReady } = usePipeline();
+  const { status, error, landmarks, faces, primaryIndex, features, prediction, perf,
+    videoSize, onVideoReady, setPaused } = usePipeline();
   const [history, setHistory] = useState<number[][]>([]);
   const [debugLandmarks, setDebugLandmarks] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -78,12 +79,12 @@ export default function CognitiveApp() {
             </div>
           </div>
           {error ? (
-            <span className="flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-sm font-medium text-[var(--warn)]">
+            <span role="status" aria-live="polite" className="flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-sm font-medium text-[var(--warn)]">
               <span className="h-2 w-2 rounded-full bg-[var(--warn)]" />
               {error}
             </span>
           ) : (
-            <span className="flex items-center gap-2 rounded-full bg-[var(--surface-sunken)] px-3 py-1.5 text-sm font-medium">
+            <span role="status" aria-live="polite" className="flex items-center gap-2 rounded-full bg-[var(--surface-sunken)] px-3 py-1.5 text-sm font-medium">
               <span
                 className={`h-2 w-2 rounded-full ${isLive ? 'animate-live-pulse bg-[var(--live)]' : 'bg-zinc-400'}`}
               />
@@ -100,8 +101,8 @@ export default function CognitiveApp() {
             <div className="relative">
               <WebcamFeed onVideoReady={onVideoReady} />
               {debugLandmarks
-                ? <LandmarkDebugOverlay landmarks={landmarks} />
-                : <LandmarkOverlay faces={faces} primaryIndex={primaryIndex} />}
+                ? <LandmarkDebugOverlay landmarks={landmarks} videoSize={videoSize} />
+                : <LandmarkOverlay faces={faces} primaryIndex={primaryIndex} videoSize={videoSize} />}
               {faces.length > 0 && (
                 <span className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-sm font-medium text-white backdrop-blur">
                   <PeopleIcon className="h-4 w-4" />
@@ -139,7 +140,7 @@ export default function CognitiveApp() {
 
             {statsOpen && <PerfHUD perf={perf} />}
             {featuresOpen && <FeaturePanel features={features} />}
-            {benchmarkOpen && <BenchmarkPanel />}
+            {benchmarkOpen && <BenchmarkPanel onRunningChange={setPaused} />}
           </div>
 
           <div className="space-y-4">

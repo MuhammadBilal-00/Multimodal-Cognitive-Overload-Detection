@@ -98,7 +98,17 @@ def build_split(features_dir: Path, split: str, labels: pd.DataFrame,
 
 
 def fit_scaler(train_x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Per-feature mean/std over all TRAIN frames; identity for face_present."""
+    """Per-feature mean/std over all TRAIN frames; identity for face_present.
+
+    Unlike compute_pitch_centre() / the pitch-centring step above, this does
+    NOT mask out no-face (all-zero) frames before computing mean/std — every
+    frame in every training window counts, present or not. Left this way
+    deliberately rather than "fixed": docs/results/extraction_stats.json
+    shows a 99.93-99.98% face-detection rate across every split, so the
+    zero-frame contamination this would introduce is negligible in practice.
+    Revisit if the corpus ever has a materially higher no-face rate (e.g. a
+    dataset with more off-camera time than DAiSEE's).
+    """
     flat = train_x.reshape(-1, train_x.shape[-1])
     mean = flat.mean(axis=0)
     std = flat.std(axis=0)

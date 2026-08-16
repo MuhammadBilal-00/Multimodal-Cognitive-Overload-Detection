@@ -1,10 +1,49 @@
 """Dummy ONNX with the contract I/O signature (CONTRACT.md section 5).
-features [1,30,13] -> flatten -> 64 relu -> engagement [1,4], states [1,4] (raw logits).
-Run once, commit output: python scripts/make_dummy_onnx.py
+
+features [1,30,13] -> flatten -> 64 relu -> engagement [1,4], states [1,4]
+(raw logits). RANDOM WEIGHTS — this exists only as the Day-2 scaffold that let
+Track B build against the contract before a real model existed (CONTRACT.md
+section 1), and for latency-only benchmarking.
+
+This is NOT how the shipped model is produced. That comes from:
+    python ml/src/export.py --checkpoint artifacts/runs/<ts>/best.pt --ship
+
+Writes to artifacts/dummy/ by default and refuses to clobber an existing file.
+Earlier versions hard-coded `web/public/model/model_int8.onnx` as the
+destination, so a single stray run replaced the trained 60 KB TCN with random
+weights — and because the dummy honours the same contract signature, the app
+kept running and simply emitted noise. Nothing in CI would have caught it.
+
+    python scripts/make_dummy_onnx.py [--out PATH] [--force]
 """
+import argparse
+from pathlib import Path
+
 import numpy as np
 import onnx
 from onnx import helper, TensorProto, numpy_helper
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_OUT = REPO_ROOT / "artifacts" / "dummy" / "model_int8.onnx"
+SHIPPED_DIR = REPO_ROOT / "web" / "public" / "model"
+
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("--out", type=Path, default=DEFAULT_OUT,
+                    help=f"destination .onnx (default: {DEFAULT_OUT})")
+parser.add_argument("--force", action="store_true",
+                    help="overwrite --out if it already exists")
+args = parser.parse_args()
+
+out_path = args.out.resolve()
+if out_path.exists() and not args.force:
+    raise SystemExit(f"refusing to overwrite existing {out_path} (pass --force)")
+if out_path.parent == SHIPPED_DIR:
+    print(f"WARNING: writing a RANDOM-WEIGHT model into the shipped model "
+          f"directory ({SHIPPED_DIR}).\n"
+          f"         The app will keep running and silently emit noise. "
+          f"Restore with:\n"
+          f"         git checkout -- web/public/model/")
 
 rng = np.random.default_rng(42)
 def w(name, shape, scale=0.1):
@@ -33,5 +72,6 @@ graph = helper.make_graph(
 model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
 model.ir_version = 8
 onnx.checker.check_model(model)
-onnx.save(model, "web/public/model/model_int8.onnx")
-print("saved web/public/model/model_int8.onnx")
+out_path.parent.mkdir(parents=True, exist_ok=True)
+onnx.save(model, str(out_path))
+print(f"saved {out_path}")

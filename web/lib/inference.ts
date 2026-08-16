@@ -8,7 +8,7 @@
 // runtime import that webpack never sees. Types only come from the package
 // (import type is fully erased, so it can never trigger the bundling bug).
 import type * as OrtType from 'onnxruntime-web';
-import { softmax, sigmoid, standardise } from './mathUtils';
+import { softmax, sigmoid, standardise, distributionCheck } from './mathUtils';
 import type { Scaler } from './scaler';
 
 const ORT_MODULE_PATH = '/ort/ort.wasm.min.mjs';
@@ -45,7 +45,11 @@ export async function runInference(win: Float32Array, scaler: Scaler) {
   const ms = performance.now() - t0;
   return {
     engagement: softmax(out.engagement.data as Float32Array),
+    // sigmoid, not softmax: the four states are independent binary heads
+    // (BCEWithLogitsLoss in ml/src/train.py), so they legitimately don't
+    // sum to 1. Channel order is documented in lib/states.ts.
     states: sigmoid(out.states.data as Float32Array),
+    ood: distributionCheck(std),
     ms,
   };
 }

@@ -7,8 +7,19 @@ import { selectPrimaryFace } from '../lib/primaryFace';
 import { RingBuffer } from '../lib/ringBuffer';
 import { loadScaler, type Scaler } from '../lib/scaler';
 import { initInference, runInference } from '../lib/inference';
+import type { OodReport } from '../lib/mathUtils';
+import { STATE_CHANNELS } from '../lib/states';
 
-export interface Prediction { engagement: number[]; states: number[]; ms: number }
+export interface Prediction {
+  engagement: number[];
+  states: number[];
+  // How far this window sits from the scaler's training distribution, and
+  // whether a face was even present. Drives the "reading may be unreliable"
+  // and "no face" notes instead of showing a confident-looking percentage
+  // that isn't — see lib/mathUtils.ts distributionCheck().
+  ood: OodReport;
+  ms: number;
+}
 
 // Samples between inferences: 10 Hz × 3 s — one prediction per non-overlapping
 // 3.0 s window. CONTRACT.md §6 Amendment 1 (was 5 = 2 Hz).
@@ -22,6 +33,10 @@ export interface EngineDebugState {
   status: string;
   prediction: Prediction | null;
   facePresent: boolean;
+  // Named view of prediction.states. The bare positional array is exactly
+  // what let a channel-order bug sit unnoticed in docs/results/app_e2e.json
+  // for weeks — recording the names alongside makes the next one obvious.
+  statesNamed: Record<string, number> | null;
 }
 
 declare global {
@@ -44,6 +59,10 @@ export function usePipeline() {
     { faces: [], primaryIndex: -1 });
   const [features, setFeatures] = useState<Float32Array | null>(null);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
+  // Real stream dimensions. getUserMedia treats WebcamFeed's 640x480 request
+  // as *ideal*, so the delivered stream may be 16:9; the landmark overlay
+  // needs the true size to line its dots up with the object-cover video.
+  const [videoSize, setVideoSize] = useState({ w: 0, h: 0 });
   const [perf, setPerf] = useState({
     renderFps: 0, sampleHz: 0, inferMs: [] as number[],
     modelBytes: 0, backend: '-', threads: 0, landmarkCount: 0, faceCount: 0,
@@ -73,30 +92,58 @@ export function usePipeline() {
   const prevPrimaryRef = useRef<{ cx: number; cy: number } | null>(null);
   const fpsCounter = useRef({ frames: 0, samples: 0, last: performance.now() });
   const inferTimes = useRef<number[]>([]);
+  // Benchmark pause is explicit, set by BenchmarkPanel via setPaused below.
+  // Tab-hidden pause is read live off document.hidden/hasFocus() in the loop
+  // guard instead — NOT cached via a visibilitychange listener. A listener-
+  // driven flag only updates on the transition event; if the tab is already
+  // hidden when this effect mounts (or an embedding context never fires a
+  // clean show/hide pair — confirmed happening under at least one automated
+  // browser-driver setup, where document.hidden reads true even while
+  // document.hasFocus() is true), the flag can latch "paused" with nothing
+  // left to ever clear it. Reading both live each frame is just as cheap and
+  // can't get stuck. Requiring hidden AND NOT focused (not hidden alone)
+  // additionally avoids pausing in exactly that hidden-but-focused case.
+  const pausedByBenchmarkRef = useRef(false);
 
   useEffect(() => {
     let dead = false;
     let createdDisplayLandmarker: FaceLandmarker | null = null;
     let createdFeatureLandmarker: FaceLandmarker | null = null;
     (async () => {
-      try {
-        const [displayLmk, featureLmk, scaler, info] = await Promise.all([
-          createDisplayLandmarker(), createFeatureLandmarker(), loadScaler(), initInference(),
-        ]);
-        // React StrictMode double-invokes this effect in dev; a landmarker
-        // created by an already-cleaned-up run must be closed, not leaked
-        // (it holds WASM + a GL context — "Memory climbs steadily" territory).
-        if (dead) { displayLmk.close(); featureLmk.close(); return; }
-        createdDisplayLandmarker = displayLmk;
-        createdFeatureLandmarker = featureLmk;
-        displayLandmarkerRef.current = displayLmk;
-        featureLandmarkerRef.current = featureLmk;
-        scalerRef.current = scaler;
-        setPerf((p) => ({ ...p, modelBytes: info.modelBytes, backend: info.backend, threads: info.threads }));
-        setModelsReady(true);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+      // allSettled, not all: each landmarker holds WASM + a GL context
+      // ("Memory climbs steadily" territory), so one that resolved must be
+      // captured and closed even if a sibling promise (e.g. loadScaler()
+      // failing feature_names validation) rejects. Promise.all previously
+      // skipped the destructuring entirely on any single rejection, orphaning
+      // whichever landmarker(s) had already succeeded.
+      const [displayResult, featureResult, scalerResult, infoResult] = await Promise.allSettled([
+        createDisplayLandmarker(), createFeatureLandmarker(), loadScaler(), initInference(),
+      ]);
+      if (displayResult.status === 'fulfilled') createdDisplayLandmarker = displayResult.value;
+      if (featureResult.status === 'fulfilled') createdFeatureLandmarker = featureResult.value;
+
+      // React StrictMode double-invokes this effect in dev; a landmarker
+      // created by an already-cleaned-up run must be closed, not leaked.
+      if (dead) { createdDisplayLandmarker?.close(); createdFeatureLandmarker?.close(); return; }
+
+      if (displayResult.status !== 'fulfilled' || featureResult.status !== 'fulfilled'
+          || scalerResult.status !== 'fulfilled' || infoResult.status !== 'fulfilled') {
+        createdDisplayLandmarker?.close();
+        createdFeatureLandmarker?.close();
+        createdDisplayLandmarker = null;
+        createdFeatureLandmarker = null;
+        const failure = [displayResult, featureResult, scalerResult, infoResult]
+          .find((r): r is PromiseRejectedResult => r.status === 'rejected');
+        const reason = failure?.reason;
+        setError(reason instanceof Error ? reason.message : String(reason));
+        return;
       }
+
+      displayLandmarkerRef.current = createdDisplayLandmarker;
+      featureLandmarkerRef.current = createdFeatureLandmarker;
+      scalerRef.current = scalerResult.value;
+      setPerf((p) => ({ ...p, modelBytes: infoResult.value.modelBytes, backend: infoResult.value.backend, threads: infoResult.value.threads }));
+      setModelsReady(true);
     })();
     return () => {
       dead = true;
@@ -110,7 +157,8 @@ export function usePipeline() {
     rafRef.current = requestAnimationFrame(loop);
     const video = videoRef.current, displayLmk = displayLandmarkerRef.current,
       featureLmk = featureLandmarkerRef.current, scaler = scalerRef.current;
-    if (!video || !displayLmk || !featureLmk || !scaler || video.readyState < 2) return;
+    if (!video || !displayLmk || !featureLmk || !scaler || video.readyState < 2
+        || pausedByBenchmarkRef.current || (document.hidden && !document.hasFocus())) return;
 
     const c = fpsCounter.current;
     c.frames++;
@@ -126,6 +174,9 @@ export function usePipeline() {
     if (now - lastSampleRef.current < 100) return; // contract: 10 Hz sampling
     lastSampleRef.current = now;
     c.samples++;
+
+    setVideoSize((s) => (s.w === video.videoWidth && s.h === video.videoHeight
+      ? s : { w: video.videoWidth, h: video.videoHeight }));
 
     // Overlay/People-count path: all detected faces, display purposes only.
     const displayResult = displayLmk.detectForVideo(video, now);
@@ -167,16 +218,27 @@ export function usePipeline() {
     rafRef.current = requestAnimationFrame(loop);
   }, [loop]);
 
+  // Exposed so BenchmarkPanel can pause live sampling/inference while it
+  // runs its own 300-cycle loop against the same ONNX session singleton
+  // (lib/inference.ts) — otherwise both consumers contend for the same WASM
+  // thread pool and neither result is clean.
+  const setPaused = useCallback((p: boolean) => { pausedByBenchmarkRef.current = p; }, []);
+
   useEffect(() => {
     window.__ENGINE_STATE = {
       status, prediction,
       facePresent: features ? features[12] === 1 : false,
+      statesNamed: prediction
+        ? Object.fromEntries(
+            STATE_CHANNELS.map((c, i) => [c.key, prediction.states[i]]))
+        : null,
     };
   }, [status, prediction, features]);
 
   const landmarks = faceState.faces[faceState.primaryIndex] ?? null;
   return {
     status, error, landmarks, faces: faceState.faces,
-    primaryIndex: faceState.primaryIndex, features, prediction, perf, onVideoReady,
+    primaryIndex: faceState.primaryIndex, features, prediction, perf,
+    videoSize, onVideoReady, setPaused,
   };
 }

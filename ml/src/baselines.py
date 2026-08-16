@@ -61,11 +61,17 @@ def row(split: str, model: str, y_true: np.ndarray, y_pred: np.ndarray) -> list:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    # Default is Validation-only: Test was already consumed once (2026-08-02)
+    # for the TCN's final report, and eval.py requires an explicit --split
+    # Test opt-in for the same reason. --split both matches how the existing
+    # committed docs/results/baselines.csv was produced (2026-08-09) — that
+    # artifact is not touched by this flag, only future re-runs are.
+    parser.add_argument("--split", choices=["validation", "both"],
+                        default="validation")
     args = parser.parse_args()
 
     x_train, y_train = load_split("Train")
     x_val, y_val = load_split("Validation")
-    x_test, y_test = load_split("Test")
 
     # Same idiom as train.py:233-237 / eval.py:134-138: majority-class
     # constant prediction, macro-F1 against it as the floor every model
@@ -77,9 +83,12 @@ def main() -> None:
     rf = RandomForestClassifier(class_weight="balanced", random_state=42)
     rf.fit(x_train, y_train)
 
+    splits = [("Validation", x_val, y_val)]
+    if args.split == "both":
+        splits.append(("Test", *load_split("Test")))
+
     rows = [["split", "model", "macro_f1", "accuracy"]]
-    for split_name, x_eval, y_eval in (
-            ("Validation", x_val, y_val), ("Test", x_test, y_test)):
+    for split_name, x_eval, y_eval in splits:
         maj_pred = np.full_like(y_eval, majority)
         logreg_pred = logreg.predict(x_eval)
         rf_pred = rf.predict(x_eval)

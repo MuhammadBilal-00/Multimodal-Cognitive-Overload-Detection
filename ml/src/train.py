@@ -3,8 +3,16 @@
 Adam lr 1e-3, cosine schedule, batch 128, max 100 epochs.
 Early stopping on VALIDATION MACRO-F1 (not loss, not accuracy),
 patience 15. Loss = CE(engagement, inverse-frequency weights)
-+ 0.5 * BCE(states). Class weighting is not optional: engagement
-levels 0/1 are 0.6%/4% of train windows.
++ state-loss-weight * BCE(states, per-channel pos_weight). Class
+weighting is not optional for either head: engagement levels 0/1 are
+0.6%/4% of train windows, and states confusion/frustration are ~11.6%/7%
+— an earlier unweighted-BCE states head collapsed to predicting each
+channel's base rate (AUC ~0.53/0.55, i.e. no better than chance;
+docs/results/metrics_states_validation.csv). pos_weight is computed from
+the training split itself (neg/pos ratio per channel), not a flag.
+Gradient clipping (--grad-clip) exists specifically because that
+pos_weight can be large (~7-13x on the rare channels) flowing into the
+TCN trunk shared with the engagement head.
 
 Every run logs to artifacts/runs/{timestamp}/: config.json,
 metrics.csv (per epoch), best.pt (highest val macro-F1), final report.
@@ -25,7 +33,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sklearn.metrics import f1_score
+from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -83,12 +91,33 @@ class FocalLoss(nn.Module):
 def evaluate(model: nn.Module, loader: DataLoader) -> dict:
     model.eval()
     preds, targets = [], []
-    for x, y_eng, _ in loader:
-        logits, _ = model(x)
+    state_targets, state_logits = [], []
+    for x, y_eng, y_states in loader:
+        logits, logits_states = model(x)
         preds.append(logits.argmax(dim=1).numpy())
         targets.append(y_eng.numpy())
+        state_targets.append(y_states.numpy())
+        state_logits.append(logits_states.numpy())
     y_pred = np.concatenate(preds)
     y_true = np.concatenate(targets)
+
+    # Secondary (states) head, previously never scored here at all — only
+    # eval.py's states_rows() looked at it, and only after a full run
+    # finished. Early stopping / best.pt selection below still keys on
+    # macro_f1 (engagement stays primary, per this file's own docstring);
+    # this is visibility into training, not a new objective. Mirrors
+    # states_rows()'s single-class-column guard (AUC/AP undefined when a
+    # validation batch/epoch has no positives or no negatives for a channel).
+    y_states_true = np.concatenate(state_targets)
+    states_probs = 1.0 / (1.0 + np.exp(-np.concatenate(state_logits)))
+    states_auc, states_ap = [], []
+    for c in range(y_states_true.shape[1]):
+        true_c = y_states_true[:, c]
+        if true_c.min() == true_c.max():
+            continue
+        states_auc.append(roc_auc_score(true_c, states_probs[:, c]))
+        states_ap.append(average_precision_score(true_c, states_probs[:, c]))
+
     return {
         "macro_f1": float(f1_score(y_true, y_pred, average="macro",
                                    zero_division=0)),
@@ -100,6 +129,8 @@ def evaluate(model: nn.Module, loader: DataLoader) -> dict:
                                   labels=[0, 1, 2, 3], zero_division=0)],
         "pred_class_counts": [int(c) for c in
                               np.bincount(y_pred, minlength=4)],
+        "states_macro_auc": float(np.mean(states_auc)) if states_auc else float("nan"),
+        "states_macro_ap": float(np.mean(states_ap)) if states_ap else float("nan"),
     }
 
 
@@ -110,6 +141,9 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--patience", type=int, default=15)
     parser.add_argument("--state-loss-weight", type=float, default=0.5)
+    parser.add_argument("--grad-clip", type=float, default=5.0,
+                        help="max grad-norm; 0 disables. Safety net for the "
+                             "states head's pos_weight (see module docstring)")
     parser.add_argument("--focal-gamma", type=float, default=0.0,
                         help="0 = weighted CE; >0 = focal loss with this gamma")
     parser.add_argument("--weight-power", type=float, default=1.0,
@@ -132,13 +166,20 @@ def main() -> None:
     class_weights = inverse_frequency_weights(y_train,
                                               power=args.weight_power)
 
+    # Per-channel pos_weight, same neg/pos-ratio idiom nn.BCEWithLogitsLoss
+    # expects natively. Computed from Train only (never Validation/Test),
+    # mirroring class_weights above.
+    y_states_train = train_ds.tensors[2]
+    states_pos = y_states_train.sum(dim=0)
+    states_pos_weight = (len(y_states_train) - states_pos) / states_pos.clamp(min=1)
+
     model = EngagementTCN()
     if args.focal_gamma > 0:
         engagement_loss = FocalLoss(class_weights, args.focal_gamma)
     else:
         engagement_loss = nn.CrossEntropyLoss(
             weight=class_weights, label_smoothing=args.label_smoothing)
-    states_loss = nn.BCEWithLogitsLoss()
+    states_loss = nn.BCEWithLogitsLoss(pos_weight=states_pos_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr,
                                  weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -149,15 +190,18 @@ def main() -> None:
     config = vars(args) | {
         "parameters": parameter_count(model),
         "class_weights": [float(w) for w in class_weights],
+        "states_pos_weight": [float(w) for w in states_pos_weight],
         "train_windows": len(train_ds),
         "val_windows": len(val_ds),
         "train_class_counts": [int(c) for c in
                                torch.bincount(y_train, minlength=4)],
+        "train_states_positive_counts": [int(c) for c in states_pos],
     }
     with open(run_dir / "config.json", "w") as fh:
         json.dump(config, fh, indent=1, default=str)
     print(f"run dir: {run_dir}")
     print(f"class weights: {[round(float(w), 2) for w in class_weights]}")
+    print(f"states pos_weight: {[round(float(w), 2) for w in states_pos_weight]}")
 
     # Majority-class floor for context in every report.
     val_majority = evaluate_majority(val_ds)
@@ -170,8 +214,8 @@ def main() -> None:
     with open(metrics_path, "w", newline="") as fh:
         writer = csv.writer(fh)
         writer.writerow(["epoch", "train_loss", "val_macro_f1",
-                         "val_weighted_f1", "val_accuracy", "lr",
-                         "seconds"])
+                         "val_weighted_f1", "val_accuracy", "val_states_auc",
+                         "lr", "seconds"])
 
     for epoch in range(args.epochs):
         model.train()
@@ -185,6 +229,8 @@ def main() -> None:
                     + args.state_loss_weight
                     * states_loss(logits_states, y_states))
             loss.backward()
+            if args.grad_clip > 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
             optimizer.step()
             total_loss += float(loss)
             n_batches += 1
@@ -196,7 +242,7 @@ def main() -> None:
             csv.writer(fh).writerow(
                 [epoch, round(total_loss / n_batches, 5),
                  round(val["macro_f1"], 5), round(val["weighted_f1"], 5),
-                 round(val["accuracy"], 5),
+                 round(val["accuracy"], 5), round(val["states_macro_auc"], 5),
                  round(scheduler.get_last_lr()[0], 8), round(seconds, 1)])
         marker = ""
         if val["macro_f1"] > best_f1:
@@ -210,6 +256,7 @@ def main() -> None:
         print(f"epoch {epoch:3d}  loss {total_loss/n_batches:.4f}  "
               f"val macro-F1 {val['macro_f1']:.4f}  "
               f"acc {val['accuracy']:.4f}  "
+              f"states-AUC {val['states_macro_auc']:.3f}  "
               f"per-class {[round(v, 3) for v in val['per_class_f1']]}"
               f"{marker}")
         if since_best >= args.patience:
