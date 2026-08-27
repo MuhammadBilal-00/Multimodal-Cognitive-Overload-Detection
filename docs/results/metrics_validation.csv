@@ -7,4 +7,5 @@ macro,,,0.3043,11432
 weighted,,,0.466,11432
 accuracy,,,0.4433,11432
 majority baseline (macro-F1),,,0.1813,11432
+quadratic weighted kappa,,,0.133,11432
 3-class merged (0+1=low) macro-F1,,,0.4068,11432

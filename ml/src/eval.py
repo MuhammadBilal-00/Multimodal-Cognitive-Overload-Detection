@@ -31,8 +31,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from sklearn.metrics import (
-    auc, average_precision_score, confusion_matrix, f1_score,
-    precision_recall_fscore_support, roc_auc_score, roc_curve)
+    auc, average_precision_score, cohen_kappa_score, confusion_matrix,
+    f1_score, precision_recall_fscore_support, roc_auc_score, roc_curve)
 
 SRC_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SRC_DIR))
@@ -145,6 +145,14 @@ def metrics_rows(y_true, y_pred) -> list[list]:
     rows.append(["majority baseline (macro-F1)", "", "",
                  round(f1_score(y_true, np.full_like(y_true, majority),
                                 average="macro", zero_division=0), 4),
+                 len(y_true)])
+    # Ordinal-aware metric: engagement levels are ordered (very low < low <
+    # engaged < very engaged), so quadratic-weighted kappa penalises a
+    # far-off misclassification more than an adjacent one — macro-F1 above
+    # does not distinguish the two. See docs/results/model_comparison_summary.md.
+    rows.append(["quadratic weighted kappa", "", "",
+                 round(float(cohen_kappa_score(y_true, y_pred,
+                                               weights="quadratic")), 4),
                  len(y_true)])
     return rows
 

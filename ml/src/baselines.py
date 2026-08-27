@@ -2,10 +2,19 @@
 
 Flattens each (30, 13) window to a 65-dim aggregate vector (mean, std,
 min, max, range per feature, in that order) and trains logistic
-regression + random forest once on Train. Reports macro-F1 and accuracy
-on BOTH Validation and Test splits — same two splits, same `split` column
-convention as `eval.py`'s `metrics_validation.csv` / `metrics_test.csv`,
-so the TCN and these baselines are directly comparable row-by-row.
+regression + random forest + gradient boosting once on Train. Reports
+macro-F1, accuracy, and quadratic-weighted kappa (QWK — ordinal-aware,
+penalises a far-off misclassification more than an adjacent one, unlike
+macro-F1) on BOTH Validation and Test splits — same two splits, same
+`split` column convention as `eval.py`'s `metrics_validation.csv` /
+`metrics_test.csv`, so the TCN and these baselines are directly
+comparable row-by-row.
+
+Gradient boosting (`HistGradientBoostingClassifier`) has no `class_weight`
+argument, so it's fit with per-sample weights from
+`compute_sample_weight("balanced", ...)` instead — the same inverse-class-
+frequency idea `class_weight="balanced"` uses for logreg/RF, expressed as
+per-sample weights rather than per-class weights.
 
 Also reports the same "3-class merged (0+1=low)" collapse `eval.py`
 reports for the TCN, as extra `*_3class_merged` model rows, for a cleaner
@@ -20,9 +29,10 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, cohen_kappa_score, f1_score
+from sklearn.utils.class_weight import compute_sample_weight
 
 SRC_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SRC_DIR))
@@ -56,6 +66,7 @@ def row(split: str, model: str, y_true: np.ndarray, y_pred: np.ndarray) -> list:
         split, model,
         round(float(f1_score(y_true, y_pred, average="macro", zero_division=0)), 4),
         round(float(accuracy_score(y_true, y_pred)), 4),
+        round(float(cohen_kappa_score(y_true, y_pred, weights="quadratic")), 4),
     ]
 
 
@@ -82,25 +93,31 @@ def main() -> None:
     logreg.fit(x_train, y_train)
     rf = RandomForestClassifier(class_weight="balanced", random_state=42)
     rf.fit(x_train, y_train)
+    gbm = HistGradientBoostingClassifier(random_state=42)
+    gbm.fit(x_train, y_train,
+            sample_weight=compute_sample_weight("balanced", y_train))
 
     splits = [("Validation", x_val, y_val)]
     if args.split == "both":
         splits.append(("Test", *load_split("Test")))
 
-    rows = [["split", "model", "macro_f1", "accuracy"]]
+    rows = [["split", "model", "macro_f1", "accuracy", "qwk"]]
     for split_name, x_eval, y_eval in splits:
         maj_pred = np.full_like(y_eval, majority)
         logreg_pred = logreg.predict(x_eval)
         rf_pred = rf.predict(x_eval)
+        gbm_pred = gbm.predict(x_eval)
 
         rows.append(row(split_name, "majority", y_eval, maj_pred))
         rows.append(row(split_name, "logreg", y_eval, logreg_pred))
         rows.append(row(split_name, "random_forest", y_eval, rf_pred))
+        rows.append(row(split_name, "gradient_boosting", y_eval, gbm_pred))
 
         y_eval_3 = merge_3class(y_eval)
         rows.append(row(split_name, "majority_3class_merged", y_eval_3, merge_3class(maj_pred)))
         rows.append(row(split_name, "logreg_3class_merged", y_eval_3, merge_3class(logreg_pred)))
         rows.append(row(split_name, "random_forest_3class_merged", y_eval_3, merge_3class(rf_pred)))
+        rows.append(row(split_name, "gradient_boosting_3class_merged", y_eval_3, merge_3class(gbm_pred)))
 
     out_dir = REPO_ROOT / "docs" / "results"
     out_dir.mkdir(parents=True, exist_ok=True)

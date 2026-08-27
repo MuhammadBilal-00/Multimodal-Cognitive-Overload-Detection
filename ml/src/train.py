@@ -33,7 +33,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score, cohen_kappa_score, f1_score, roc_auc_score)
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -41,7 +42,10 @@ SRC_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SRC_DIR))
 REPO_ROOT = SRC_DIR.parent.parent
 
-from model import EngagementTCN, parameter_count  # noqa: E402
+from feature_groups import PRESETS  # noqa: E402
+from model import (  # noqa: E402
+    CHANNELS, DROPOUT, N_CLASSES, build_model, coral_loss, coral_predict,
+    parameter_count)
 
 DATASET_DIR = REPO_ROOT / "artifacts" / "dataset"
 RUNS_DIR = REPO_ROOT / "artifacts" / "runs"
@@ -53,10 +57,13 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
 
 
-def load_split(split: str) -> TensorDataset:
+def load_split(split: str, feature_idx: list[int] | None = None) -> TensorDataset:
     data = np.load(DATASET_DIR / f"{split}.npz")
+    x = data["x"]
+    if feature_idx is not None:
+        x = x[:, :, feature_idx]
     return TensorDataset(
-        torch.from_numpy(data["x"]),
+        torch.from_numpy(x),
         torch.from_numpy(data["y_engagement"]),
         torch.from_numpy(data["y_states"]))
 
@@ -88,13 +95,14 @@ class FocalLoss(nn.Module):
 
 
 @torch.no_grad()
-def evaluate(model: nn.Module, loader: DataLoader) -> dict:
+def evaluate(model: nn.Module, loader: DataLoader, ordinal: bool = False) -> dict:
     model.eval()
     preds, targets = [], []
     state_targets, state_logits = [], []
     for x, y_eng, y_states in loader:
         logits, logits_states = model(x)
-        preds.append(logits.argmax(dim=1).numpy())
+        pred = coral_predict(logits) if ordinal else logits.argmax(dim=1)
+        preds.append(pred.numpy())
         targets.append(y_eng.numpy())
         state_targets.append(y_states.numpy())
         state_logits.append(logits_states.numpy())
@@ -123,6 +131,7 @@ def evaluate(model: nn.Module, loader: DataLoader) -> dict:
                                    zero_division=0)),
         "weighted_f1": float(f1_score(y_true, y_pred, average="weighted",
                                       zero_division=0)),
+        "qwk": float(cohen_kappa_score(y_true, y_pred, weights="quadratic")),
         "accuracy": float((y_pred == y_true).mean()),
         "per_class_f1": [float(v) for v in
                          f1_score(y_true, y_pred, average=None,
@@ -151,13 +160,43 @@ def main() -> None:
     parser.add_argument("--label-smoothing", type=float, default=0.0)
     parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--arch", choices=["tcn", "lstm", "gru", "transformer"],
+                        default="tcn",
+                        help="architecture-family comparison (docs/results/"
+                             "architecture_comparison.csv); only 'tcn' is "
+                             "ever exported/shipped")
+    parser.add_argument("--feature-subset", choices=list(PRESETS),
+                        default="full",
+                        help="feature-family ablation (docs/results/"
+                             "feature_ablation.csv); 'full' = all 13 "
+                             "features, unchanged default behaviour")
+    parser.add_argument("--channels", type=int, default=CHANNELS,
+                        help="TCN hidden channel width (--arch tcn only); "
+                             "docs/results/tcn_grid.csv")
+    parser.add_argument("--dropout", type=float, default=DROPOUT,
+                        help="TCN block dropout (--arch tcn only); "
+                             "docs/results/tcn_grid.csv")
+    parser.add_argument("--ordinal", action="store_true",
+                        help="CORAL ordinal-regression engagement head "
+                             "(--arch tcn only); docs/results/"
+                             "ordinal_comparison.csv. Replaces the weighted-"
+                             "CE/focal engagement loss with unweighted CORAL "
+                             "loss; --focal-gamma/--weight-power/"
+                             "--label-smoothing are ignored when set.")
     args = parser.parse_args()
+
+    if args.arch != "tcn":
+        if args.channels != CHANNELS or args.dropout != DROPOUT:
+            raise SystemExit("--channels/--dropout require --arch tcn")
+        if args.ordinal:
+            raise SystemExit("--ordinal requires --arch tcn")
 
     set_seed(args.seed)
     torch.set_num_threads(max(1, (torch.get_num_threads() or 8)))
 
-    train_ds = load_split("Train")
-    val_ds = load_split("Validation")
+    feature_idx = PRESETS[args.feature_subset]
+    train_ds = load_split("Train", feature_idx)
+    val_ds = load_split("Validation", feature_idx)
     train_loader = DataLoader(train_ds, batch_size=args.batch_size,
                               shuffle=True, drop_last=False)
     val_loader = DataLoader(val_ds, batch_size=512)
@@ -173,8 +212,12 @@ def main() -> None:
     states_pos = y_states_train.sum(dim=0)
     states_pos_weight = (len(y_states_train) - states_pos) / states_pos.clamp(min=1)
 
-    model = EngagementTCN()
-    if args.focal_gamma > 0:
+    model_kwargs = ({"channels": args.channels, "dropout": args.dropout,
+                     "ordinal": args.ordinal} if args.arch == "tcn" else {})
+    model = build_model(args.arch, n_features=len(feature_idx), **model_kwargs)
+    if args.ordinal:
+        engagement_loss = lambda logits, y: coral_loss(logits, y, N_CLASSES)  # noqa: E731
+    elif args.focal_gamma > 0:
         engagement_loss = FocalLoss(class_weights, args.focal_gamma)
     else:
         engagement_loss = nn.CrossEntropyLoss(
@@ -185,9 +228,23 @@ def main() -> None:
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=args.epochs)
 
-    run_dir = RUNS_DIR / datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_name = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if args.arch != "tcn":
+        run_name += f"_{args.arch}"
+    if args.feature_subset != "full":
+        run_name += f"_{args.feature_subset}"
+    if args.channels != CHANNELS:
+        run_name += f"_ch{args.channels}"
+    if args.dropout != DROPOUT:
+        run_name += f"_do{args.dropout}"
+    if args.ordinal:
+        run_name += "_ordinal"
+    if args.seed != 42:
+        run_name += f"_seed{args.seed}"
+    run_dir = RUNS_DIR / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
     config = vars(args) | {
+        "n_features": len(feature_idx),
         "parameters": parameter_count(model),
         "class_weights": [float(w) for w in class_weights],
         "states_pos_weight": [float(w) for w in states_pos_weight],
@@ -236,7 +293,7 @@ def main() -> None:
             n_batches += 1
         scheduler.step()
 
-        val = evaluate(model, val_loader)
+        val = evaluate(model, val_loader, ordinal=args.ordinal)
         seconds = time.time() - t0
         with open(metrics_path, "a", newline="") as fh:
             csv.writer(fh).writerow(
@@ -266,7 +323,7 @@ def main() -> None:
 
     model.load_state_dict(torch.load(run_dir / "best.pt",
                                      weights_only=True))
-    final_val = evaluate(model, val_loader)
+    final_val = evaluate(model, val_loader, ordinal=args.ordinal)
     report = {
         "best_epoch": best_epoch,
         "val": final_val,

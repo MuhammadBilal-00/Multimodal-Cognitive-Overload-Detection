@@ -1,0 +1,67 @@
+{
+ "Validation": {
+  "n_clips": 1429,
+  "n_windows": 11432,
+  "tcn": {
+   "point_macro_f1": 0.3061,
+   "ci_95": [
+    0.2865,
+    0.3263
+   ]
+  },
+  "best_classical_baseline": {
+   "model": "gradient_boosting",
+   "point_macro_f1": 0.2907,
+   "ci_95": [
+    0.272,
+    0.3104
+   ],
+   "other_classical_point_macro_f1": {
+    "random_forest": 0.2669,
+    "gradient_boosting": 0.2907
+   }
+  },
+  "tcn_minus_baseline": {
+   "point": 0.0154,
+   "ci_95": [
+    -0.0071,
+    0.0381
+   ]
+  },
+  "two_sided_p_value": 0.194
+ },
+ "Test": {
+  "n_clips": 1784,
+  "n_windows": 14241,
+  "tcn": {
+   "point_macro_f1": 0.2475,
+   "ci_95": [
+    0.233,
+    0.2613
+   ]
+  },
+  "best_classical_baseline": {
+   "model": "gradient_boosting",
+   "point_macro_f1": 0.291,
+   "ci_95": [
+    0.2772,
+    0.3057
+   ],
+   "other_classical_point_macro_f1": {
+    "random_forest": 0.2643,
+    "gradient_boosting": 0.291
+   }
+  },
+  "tcn_minus_baseline": {
+   "point": -0.0435,
+   "ci_95": [
+    -0.0594,
+    -0.028
+   ]
+  },
+  "two_sided_p_value": 0.0
+ },
+ "iterations": 2000,
+ "method": "paired cluster bootstrap, resampling unit = clip ID (not window) -- see module docstring",
+ "tcn_checkpoint": "artifacts\\runs\\20260801_185630\\best.pt"
+}
