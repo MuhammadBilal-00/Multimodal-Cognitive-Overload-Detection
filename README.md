@@ -3,7 +3,7 @@
 Final-year project: detecting learner engagement and cognitive states from
 webcam video, with **all inference running client-side** — video never leaves
 the user's machine. A small temporal convolutional network is trained on the
-DAiSEE dataset, quantized to int8 ONNX (~200 KB), and executed in the browser
+DAiSEE dataset, quantized to int8 ONNX (~60 KB), and executed in the browser
 with onnxruntime-web on features extracted by MediaPipe Face Mesh.
 
 - **Track A** (this repo's `ml/`): DAiSEE video → features → trained,
@@ -98,6 +98,35 @@ mediapipe is pinned at **1.0.0**, which has removed the legacy
 (`FaceLandmarker`). See CONTRACT.md §4 for why this also helps
 Python↔JS parity.
 
+**Additional prerequisites for specific Track A scripts** (not needed for
+the core pipeline below):
+
+- `ffmpeg` on PATH — `ml/scripts/make_parity_fixture.py` and
+  `ml/scripts/e2e_app_test.py` (frame extraction / fixture transcoding).
+- `playwright install chromium` (after pip install) — the three
+  browser-driving scripts (`e2e_app_test.py`, `collect_benchmark.py`,
+  `browser_tests.py`).
+- Node.js 20+ with `web/` built (`npm install && npm run build`) — the
+  same three scripts drive the real app.
+
+## Reproducing the Track A pipeline
+
+With DAiSEE at `data/DAiSEE/DataSet/{Train,Validation,Test}` and its label
+CSVs at `data/DAiSEE/Labels/`, the full pipeline is five commands, run in
+order from the repo root (each module's docstring documents its flags):
+
+```powershell
+python ml\src\extract.py            # DAiSEE video -> per-clip feature CSVs (hours; --resume supported)
+python ml\src\dataset.py            # CSVs -> windowed npz splits + scaler.json
+python ml\src\train.py              # train the TCN -> artifacts/runs/<ts>/best.pt
+python ml\src\eval.py --checkpoint artifacts\runs\<ts>\best.pt   # metrics/figures -> docs/results/
+python ml\src\export.py --checkpoint artifacts\runs\<ts>\best.pt --ship  # ONNX + int8 -> web/public/model/
+```
+
+Baselines (`python ml\src\baselines.py`) and the Experiment 7–8 comparison
+scripts (`ml/src/architecture_comparison.py`, `cv_*.py`, `clip_eval.py`,
+etc.) run against the npz splits `dataset.py` produces.
+
 ## Setup (Track B)
 
 Requires Node.js 20+.
@@ -150,10 +179,10 @@ the archive plus extracted frames.
 - [x] DAiSEE extracted to `data/DAiSEE/` with official Train/Validation/Test folders (5481/1720/1866 clips on disk; labels cover 5358/1429/1784)
 - [x] Audio-stream check: **no audio in DAiSEE** — "multimodal" = three visual modality families (CONTRACT.md §8)
 - [x] Day 2 — `features.py` + tests (17 passing) + landmark indices visually verified (`docs/verification/`)
-- [x] Days 3–5 — extraction (9,032 clips, 0 failures, 99.96% detection), windows + `scaler.json` (pitch_centre 0.3733), parity fixture
+- [x] Days 3–5 — extraction (all 9,067 on-disk clips have feature CSVs; the committed `extraction_stats.json` covers the 9,032 processed in its final `--resume` pass — 0 failures, 99.96% detection over those; 8,570 labelled∩extracted clips ultimately feed training: 5,357/1,429/1,784), windows + `scaler.json` (pitch_centre 0.3733), parity fixture
 - [x] Days 6–7 — TCN (41.5k params), A6.5 browser smoke PASS (static QDQ int8; dynamic quant is browser-incompatible), J1 parity gate PASS (worst diff 0.0079)
 - [x] Days 8–9 — training: 6 runs, winner weighted-CE lr 1e-3, val macro-F1 0.3061 (majority floor 0.1813)
-- [x] Days 10–11 — eval artifacts (validation), trained int8 shipped (60 KB, Δ macro-F1 −0.0016), Next.js app + fake-webcam e2e PASS
+- [x] Days 10–11 — eval artifacts (validation), trained int8 shipped (60 KB, Δ macro-F1 −0.0015 on Test, `docs/results/quantization_test.csv`), Next.js app + fake-webcam e2e PASS
 - [x] Days 14–15 — **final test-set evaluation (run exactly once, 2026-08-02)**: fp32 macro-F1 **0.2475** vs majority floor 0.1655; int8 0.2460 (Δ −0.0015); 3-class merged 0.3318; J3 browser benchmarks archived
 - [x] 2026-08-03 — Track A + Track B repositories merged (unrelated histories); real trained model kept, Azeem's app canonical in `web/`
 - [x] 2026-08-03 — CONTRACT.md v1.1 (§6 Amendment 1: 3 s prediction cadence), both partners signed; multi-face detection (up to 4, primary-face prediction, People count); landmarker pinned to CPU delegate per parity evidence

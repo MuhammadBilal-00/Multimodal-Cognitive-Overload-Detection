@@ -85,3 +85,12 @@ jobs:
         run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r ml/requirements.txt
       - name: pytest
         run: pytest ml/tests/ -q
+      # A9 export-parity gate, genuinely CI-enforced: exports an untrained
+      # model (no dataset needed), checks the ONNX graph, runs the
+      # PyTorch-vs-onnxruntime parity check (100 inputs, max|diff| < 1e-5,
+      # hard failure otherwise), quantizes static-QDQ (random calibration is
+      # permitted for --untrained only, with a printed warning), and smoke-
+      # runs the int8 graph. Guards the export path itself — the trained
+      # weights don't change what ops/graph shape the exporter emits.
+      - name: export parity gate (untrained smoke)
+        run: python ml/src/export.py --untrained --out artifacts/ci_export_smoke

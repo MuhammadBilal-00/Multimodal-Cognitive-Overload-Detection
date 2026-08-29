@@ -28,7 +28,6 @@ onnx==1.22.0
 onnx-ir==0.2.1
 onnxruntime==1.28.0
 onnxscript==0.7.1
-opencv-contrib-python==4.11.0.86
 opencv-python==4.11.0.86
 optuna==4.9.0
 packaging==26.2
@@ -47,7 +46,6 @@ PyYAML==6.0.3
 scikit-learn==1.9.0
 scipy==1.17.1
 six==1.17.0
-sounddevice==0.5.5
 SQLAlchemy==2.0.52
 sympy==1.14.0
 threadpoolctl==3.6.0
