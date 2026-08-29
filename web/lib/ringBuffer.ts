@@ -16,6 +16,14 @@ export class RingBuffer {
     return this.count >= WINDOW;
   }
 
+  // Discard all buffered frames. Called on resume after any sampling pause
+  // (benchmark run, hidden tab): a window handed to the model must be 30
+  // temporally contiguous samples, never frames straddling a gap.
+  reset(): void {
+    this.buf.fill(0);
+    this.count = 0;
+  }
+
   window(): Float32Array {
     return this.buf;
   }

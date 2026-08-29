@@ -305,6 +305,36 @@ trained on `numFaces > 1` landmark noise. `createDisplayLandmarker()`
 count only, and its output must never reach `computeFeatures()`. Costs a
 second WASM detection pass per sampled frame.
 
+## Amendment 4 — brow eye-centre formula divergence found and fixed (2026-08-29)
+
+> A code audit found that `web/lib/features.ts` computed the brow features'
+> eye centre as the **centroid of all six EAR landmarks**, where
+> `ml/src/features.py` `brow_ratio()` — the reference this contract §2
+> defines — uses the **midpoint of the two eye corners** (p1, p4). The lids
+> drag the centroid off the corner line, so `brow_left`/`brow_right` carried
+> a systematic ~0.011 mean-abs offset at inference relative to training —
+> 18–155× worse than every other feature's Python↔browser diff, visible in
+> `docs/results/parity_report.json` the whole time.
+>
+> **Amendment 2's diagnosis is hereby corrected.** It attributed the whole
+> parity diff budget to "small, expected sub-pixel landmark noise, not a
+> train/serve bug". For eleven of thirteen features that was true; for the
+> two brow features it was a formula divergence — a train/serve skew — that
+> the tolerance loosened in Amendment 2 (1e-4 → 0.02) was wide enough to
+> mask. The 0.02 tolerance itself remains in force (it is still needed for
+> genuine runtime noise), with the recorded lesson: **a feature-selective
+> parity anomaly is a formula bug until proven otherwise.**
+>
+> Fix: `features.ts` now uses the corner midpoint, pinned by two new unit
+> tests (the ported Python fixture, plus an asymmetric-lid fixture that
+> distinguishes midpoint from centroid — the symmetric Python fixture cannot).
+> J1 re-run after the fix: brow mean-abs diffs fell to 0.000085/0.000074
+> (~140×), and the gate's worst-case per-feature diff fell from 0.0157 to
+> **0.0035** — headroom against tolerance improved from 1.3× to 5.7×.
+> No tensor name, shape, dtype, or Python-side change; the shipped model is
+> unaffected (it was trained on the correct Python features throughout —
+> the skew existed only at browser inference time).
+
 ## Sign-off
 
 | Partner | Track | Date | Signed |
@@ -312,4 +342,7 @@ second WASM detection pass per sampled frame.
 | Bilal | A — ML pipeline | 2026-08-03 | ☑ |
 | Azeem | B — Web app | 2026-08-03 | ☑ |
 | Both | Amendment 2 (J1 rebuild, numFaces fix) | 2026-08-09 | ☑ |
-| Both | Amendment 3 (states channel order) | 2026-08-14 | ☐ |
+| Bilal | Amendment 3 (states channel order) | 2026-08-29 | ☑ |
+| Azeem | Amendment 3 (states channel order) | — | ☐ |
+| Bilal | Amendment 4 (brow formula fix) | 2026-08-29 | ☑ |
+| Azeem | Amendment 4 (brow formula fix) | — | ☐ |

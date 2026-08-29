@@ -19,7 +19,12 @@ export default function LandmarkOverlay({
     // Match object-cover so dots track the face even on 16:9 streams.
     const fit = coverFit(videoSize.w, videoSize.h, c.width, c.height, mirrored);
     faces.forEach((landmarks, i) => {
-      // Cyan marks the face driving the prediction; other faces draw dimmed.
+      // Cyan marks the DISPLAY-primary face (largest bbox, sticky); other
+      // faces draw dimmed. NOTE: this is a display concept only — the model
+      // is fed by the separate numFaces:1 feature landmarker, whose single
+      // detected face is chosen by MediaPipe internally and is not guaranteed
+      // to be this highlighted face when several people are in frame (see
+      // lib/faceLandmarker.ts for why the two detectors must stay separate).
       ctx.fillStyle = i === primaryIndex ? '#22d3ee' : '#71717a';
       for (const l of landmarks) {
         ctx.fillRect(fit.x(l.x) - 0.5, fit.y(l.y) - 0.5, 1.5, 1.5);

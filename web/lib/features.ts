@@ -66,9 +66,22 @@ export function computeFeatures(
   const [mL, mR, mU, mD] = MOUTH.map((i) => px[i]);
   const mar = dist(mU, mD) / (dist(mL, mR) + EPS);
 
-  // J1-CHECK: brow = distance(mean of 5 brow pts, mean of 6 eye pts) / interocular.
-  const browLeft = dist(mean(LEFT_BROW.map((i) => px[i])), mean(LEFT_EYE_EAR.map((i) => px[i]))) / interocular;
-  const browRight = dist(mean(RIGHT_BROW.map((i) => px[i])), mean(RIGHT_EYE_EAR.map((i) => px[i]))) / interocular;
+  // J1-CHECK: brow = distance(brow centroid, eye CENTRE) / interocular, where the
+  // eye centre is the MIDPOINT OF THE TWO EYE CORNERS (p1, p4) — exactly
+  // ml/src/features.py brow_ratio(): "Eye centre = midpoint of the eye's two
+  // corner landmarks". An earlier version of this file used the centroid of all
+  // six EAR landmarks instead; the lids drag that centroid off the corner line,
+  // which produced the ~0.011 systematic brow offset (18-155x every other
+  // feature's diff) that CONTRACT.md Amendment 2 misattributed to Python-vs-WASM
+  // landmark noise. See CONTRACT.md Amendment 4.
+  const browLeft = dist(
+    mean(LEFT_BROW.map((i) => px[i])),
+    mean([px[LEFT_EYE_EAR[0]], px[LEFT_EYE_EAR[3]]]),
+  ) / interocular;
+  const browRight = dist(
+    mean(RIGHT_BROW.map((i) => px[i])),
+    mean([px[RIGHT_EYE_EAR[0]], px[RIGHT_EYE_EAR[3]]]),
+  ) / interocular;
 
   const nose = px[NOSE_TIP];
   const chin = px[CHIN];

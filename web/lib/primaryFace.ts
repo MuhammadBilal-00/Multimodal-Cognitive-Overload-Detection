@@ -28,11 +28,15 @@ export function faceStats(faces: Landmark[][]): FaceStats[] {
   });
 }
 
-// Picks which detected face drives the cognitive prediction: largest bbox
-// area, with centroid stickiness + size hysteresis so the primary doesn't
-// flip on detection jitter. When a genuine takeover happens, the 3 s
-// feature window transiently mixes two people for at most one window —
-// accepted for this demo feature.
+// Picks which detected face the OVERLAY highlights as primary (largest bbox
+// area, with centroid stickiness + size hysteresis so the highlight doesn't
+// flip on detection jitter) and drives the "People" count. DISPLAY ONLY:
+// the model's input comes from the separate numFaces:1 feature landmarker
+// (usePipeline.ts), whose single face is selected by MediaPipe internally —
+// with multiple people in frame it is NOT guaranteed to be the face this
+// function highlights. Documented as a known limitation (thesis §5.2.2);
+// reconciling the two would require feeding display landmarks to the model,
+// which J1 parity evidence forbids (numFaces:4 fails the gate on blinks).
 export function selectPrimaryFace(
   faces: Landmark[][],
   prev: { cx: number; cy: number } | null,

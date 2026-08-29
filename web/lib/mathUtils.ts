@@ -68,11 +68,16 @@ function median(sorted: number[]): number {
 // face is there. That is not a distribution shift, and including it would put
 // a permanent floor under the metric.
 //
-// Note for anyone tempted to lower the threshold: brow_left/brow_right carry
-// a known systematic JS-vs-Python offset of ~0.011 mean-abs
-// (docs/results/parity_report.json), which against std 0.0279 is ~0.39σ — an
-// order of magnitude worse than any other feature. Far below 3σ, so it won't
-// cause false trips here, but it would be the first thing to misfire.
+// Historical note: brow_left/brow_right used to carry a systematic
+// JS-vs-Python offset of ~0.011 mean-abs (an order of magnitude worse than any
+// other feature, ~0.39σ against std 0.0279). An earlier version of this
+// comment described that as a known runtime offset; it was in fact a FORMULA
+// divergence in features.ts — the eye centre was computed as the centroid of
+// all six EAR landmarks instead of the contract's corner midpoint — fixed per
+// CONTRACT.md Amendment 4, after which the brow diffs sit in the same
+// sub-millisigma noise band as every other feature (docs/results/
+// parity_report.json). Kept as a caution: a feature-selective parity anomaly
+// is a formula bug until proven otherwise, not runtime noise.
 export function distributionCheck(
   standardised: Float32Array,
   sigmaThreshold = 3,

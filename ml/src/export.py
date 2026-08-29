@@ -1,4 +1,4 @@
-"""ONNX export + parity check + dynamic int8 quantization (A9 / A6.5).
+"""ONNX export + parity check + STATIC QDQ int8 quantization (A9 / A6.5).
 
 Order of operations (each step gates the next):
   1. model.eval()  (BatchNorm must use running stats, not batch stats)
@@ -6,7 +6,12 @@ Order of operations (each step gates the next):
   3. onnx.checker.check_model
   4. PyTorch vs onnxruntime parity on 100 random inputs, max|diff| < 1e-5
      — the build FAILS otherwise
-  5. quantize_dynamic to int8 weights
+  5. quantize_static (QDQ format), calibrated on real standardised training
+     windows. NOT quantize_dynamic: dynamic quantization emits ConvInteger
+     nodes that onnxruntime-web's WASM backend does not implement — found
+     empirically via the A6.5 browser smoke test (see quantize()'s
+     docstring); an earlier revision of this header still described the
+     rejected dynamic design.
   6. size + (optional) copy to web/public/model/
 
 Usage:
@@ -80,14 +85,16 @@ def parity_check(model: torch.nn.Module, onnx_path: Path,
 
 
 def quantize(fp32_path: Path, int8_path: Path,
-             calibration_npz: Path | None) -> None:
-    """STATIC QDQ int8 quantization.
+             calibration_npz: Path | None,
+             allow_random_calibration: bool = False) -> str:
+    """STATIC QDQ int8 quantization. Returns the calibration source used.
 
     Dynamic quantization emits ConvInteger nodes, which onnxruntime-web's
     WASM backend does not implement (found in the A6.5 browser smoke).
     Static QDQ emits QLinearConv, which it does. Calibration uses real
-    standardised training windows when available, else random normals
-    (untrained smoke — op support is what matters there).
+    standardised training windows; random normals are permitted ONLY with
+    allow_random_calibration=True (untrained smoke — op support is what
+    matters there), and missing calibration data is otherwise a hard error.
     """
     from onnxruntime.quantization import (
         CalibrationDataReader, QuantFormat, QuantType, quantize_static)
@@ -97,10 +104,24 @@ def quantize(fp32_path: Path, int8_path: Path,
         rng = np.random.default_rng(0)
         idx = rng.choice(len(data), size=min(256, len(data)), replace=False)
         samples = [data[i:i + 1].astype(np.float32) for i in idx]
-    else:
+        calibration_source = str(calibration_npz)
+    elif allow_random_calibration:
         rng = np.random.default_rng(0)
         samples = [rng.standard_normal((1, 30, N_FEATURES)).astype(np.float32)
                    for _ in range(256)]
+        calibration_source = "RANDOM (standard normal) — smoke use only"
+        print("WARNING: calibrating int8 quantization on RANDOM data — "
+              "acceptable for the --untrained browser smoke only, never "
+              "for a shipped model.")
+    else:
+        # Never silently ship a model calibrated on random noise: a typo'd
+        # --calibration path used to fall through here without a word, and
+        # the resulting badly-calibrated int8 model would pass smoke_run_int8
+        # (shape check on zeros) and reach web/public/model/.
+        raise SystemExit(
+            f"calibration data not found: {calibration_npz} — build "
+            f"artifacts/dataset/Train.npz first (python ml/src/dataset.py) "
+            f"or pass --allow-random-calibration for a smoke export.")
 
     class WindowReader(CalibrationDataReader):
         def __init__(self):
@@ -115,6 +136,7 @@ def quantize(fp32_path: Path, int8_path: Path,
                     activation_type=QuantType.QUInt8,
                     weight_type=QuantType.QInt8,
                     per_channel=True)
+    return calibration_source
 
 
 def smoke_run_int8(int8_path: Path) -> None:
@@ -169,7 +191,9 @@ def main() -> None:
     if worst >= PARITY_TOLERANCE:
         raise SystemExit("PARITY CHECK FAILED — build aborted")
 
-    quantize(fp32_path, int8_path, args.calibration)
+    calibration_source = quantize(
+        fp32_path, int8_path, args.calibration,
+        allow_random_calibration=args.untrained)
     smoke_run_int8(int8_path)
 
     sizes = {p.name: p.stat().st_size for p in (fp32_path, int8_path)}
@@ -180,6 +204,7 @@ def main() -> None:
                    "sizes_bytes": sizes,
                    "checkpoint": str(args.checkpoint) if args.checkpoint
                    else "untrained",
+                   "calibration_source": calibration_source,
                    "opset": 17, "seed": args.seed}, fh, indent=1)
 
     if args.ship:

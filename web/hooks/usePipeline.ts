@@ -104,6 +104,9 @@ export function usePipeline() {
   // can't get stuck. Requiring hidden AND NOT focused (not hidden alone)
   // additionally avoids pausing in exactly that hidden-but-focused case.
   const pausedByBenchmarkRef = useRef(false);
+  // True whenever the loop guard skipped at least one tick — consumed by the
+  // resume path to reset the ring buffer (windows must not span pauses).
+  const pauseSeenRef = useRef(false);
 
   useEffect(() => {
     let dead = false;
@@ -158,7 +161,21 @@ export function usePipeline() {
     const video = videoRef.current, displayLmk = displayLandmarkerRef.current,
       featureLmk = featureLandmarkerRef.current, scaler = scalerRef.current;
     if (!video || !displayLmk || !featureLmk || !scaler || video.readyState < 2
-        || pausedByBenchmarkRef.current || (document.hidden && !document.hasFocus())) return;
+        || pausedByBenchmarkRef.current || (document.hidden && !document.hasFocus())) {
+      // Sampling is paused (benchmark run, hidden tab, or camera not ready).
+      // Mark the pause so the resume path can clear the window: a "3.0 s"
+      // window must never silently span a benchmark run or a stretch of
+      // hidden-tab time — the model was trained on temporally contiguous
+      // windows only.
+      pauseSeenRef.current = true;
+      return;
+    }
+    if (pauseSeenRef.current) {
+      pauseSeenRef.current = false;
+      bufferRef.current.reset();
+      sampleCountRef.current = 0;
+      lastSampleRef.current = 0; // restart the sampling clock cleanly
+    }
 
     const c = fpsCounter.current;
     c.frames++;
@@ -171,8 +188,17 @@ export function usePipeline() {
       setPerf((p) => ({ ...p, renderFps, sampleHz, inferMs }));
     }
 
-    if (now - lastSampleRef.current < 100) return; // contract: 10 Hz sampling
-    lastSampleRef.current = now;
+    // Contract §6: 10 Hz sampling. Accumulator, not `lastSample = now`: the
+    // gate only runs on rAF ticks, so snapping the anchor to `now` quantises
+    // every interval UP to the next display refresh (~117 ms at 60 Hz,
+    // 120 ms at 50 Hz → a real 8.3–8.6 Hz, stretching the "3.0 s" window to
+    // up to 3.6 s — a temporal train/serve mismatch). Advancing the anchor
+    // by exactly 100 ms amortises the rAF jitter to a true 10 Hz long-run
+    // rate. Clamp on large gaps (first frame, post-pause) so we never burst
+    // to catch up.
+    if (now - lastSampleRef.current < 100) return;
+    lastSampleRef.current = now - lastSampleRef.current > 300
+      ? now : lastSampleRef.current + 100;
     c.samples++;
 
     setVideoSize((s) => (s.w === video.videoWidth && s.h === video.videoHeight
