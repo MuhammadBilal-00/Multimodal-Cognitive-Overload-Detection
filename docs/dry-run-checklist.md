@@ -14,6 +14,19 @@ light, a laptop that behaves differently than the dev machine.
 **This checklist doesn't get to mark Phase 5 done — running it for real
 does.**
 
+> **Live rehearsal record — 2026-08-29, production build (commit `63eee66`),
+> real webcam.** Part 1 baseline: Live reached; Stats read render 36 fps,
+> sampling 10 Hz (the post-fix accumulator rate, verified live), inference
+> 3.9 ms, wasm×20, 478 landmarks, model 60 KB; benchmark p50 0.78 ms.
+> Part 2 failure modes all as scripted: step-out-of-frame shows the new
+> "— no face" suppression (fixed during this very rehearsal — see
+> PROGRESS.md); second person raised the People count to 2 with primary
+> selection behaving; partial dimming kept tracking and full darkness went
+> cleanly to no-face; glasses kept 478 landmarks with gaze populated;
+> permission denial produced the specific error message, no stuck spinner.
+> First live run of this checklist: **complete.** (Part 3 cross-browser
+> applies only if the defense machine differs.)
+
 ---
 
 ## Before you start
