@@ -4,7 +4,7 @@
 **001487042**
 **MSc Data Science, University of Greenwich**
 **Supervisor: Ilya Alexakhin** | **Second Marker: Ahmed Farhat**
-**[Submission date — fill in]**
+**3 September 2026**
 
 *This report is written from the completed `Multimodal-Cognitive-Overload-Detection` repository and its full development record (`docs/PROGRESS.md`, `CONTRACT.md`, `BUILD_PLAN_1.md`, `GAP_CLOSURE_PLAN.md`, `PROJECT_COMPLETION_PLAN.md`). All figures, tables, and code references are drawn directly from artefacts produced and version-controlled in that repository (each figure's source data file is named in its caption); none are illustrative or hypothetical.*
 
@@ -34,7 +34,7 @@ Generative AI tools (Anthropic's Claude, used through the Claude Code developmen
 
 ## Table of Contents
 
-*[Auto-generate from headings in Word/Word Online after pasting: References → Table of Contents. Structure below.]*
+*[Word: References → Table of Contents — all headings are proper Word heading styles, so this generates in one click. Delete this line after.]*
 
 1. Introduction
 2. Literature Review
@@ -48,7 +48,7 @@ Appendices
 
 ## List of Tables and Figures
 
-*[Populate via Word's "Insert Caption" + "Insert Table of Figures" once tables/figures below are placed in the final document. Source data/images for each are cited inline in the relevant section — see `docs/results/`, `docs/verification/`, `docs/architecture.md`.]*
+*[Word: References → Insert Table of Figures (Caption label: "Figure", then repeat for "Table") — every figure and table caption is a proper Word Caption paragraph, so both lists generate automatically. Delete this line after.]*
 
 ---
 

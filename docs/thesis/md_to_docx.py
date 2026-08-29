@@ -112,10 +112,11 @@ def build(doc, lines):
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 p.add_run().add_picture(str(img_path), width=Inches(6.2))
                 if caption:
-                    cp = doc.add_paragraph()
+                    # Real Word "Caption" style so References -> Insert
+                    # Table of Figures picks every figure up automatically.
+                    cp = doc.add_paragraph(style="Caption")
                     cp.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     run = cp.add_run(caption)
-                    run.italic = True
                     run.font.size = Pt(9)
             else:
                 doc.add_paragraph(f"[missing image: {rel_path}]")
@@ -172,6 +173,15 @@ def build(doc, lines):
             run = p.add_run(stripped[1:-1])
             run.italic = True
             run.font.color.rgb = RGBColor(0x60, 0x60, 0x60)
+            i += 1
+            continue
+
+        # table caption line ("Table 4.1 — ...") -> Word Caption style so
+        # Insert Table of Figures / Tables finds it; prose mentions like
+        # "Table 4.1 shows..." lack the em-dash and stay normal paragraphs.
+        if re.match(r"^Table \d+\.\d+ —", stripped):
+            p = doc.add_paragraph(style="Caption")
+            add_inline_runs(p, stripped)
             i += 1
             continue
 
