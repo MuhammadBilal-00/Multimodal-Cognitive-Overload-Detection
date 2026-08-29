@@ -1,0 +1,14 @@
+{
+ "value": 0.3440635218551834,
+ "params": {
+  "lr": 0.004904890535687489,
+  "channels": 128,
+  "dropout": 0.23762829064257907,
+  "weight_power": 0.38223661195037406,
+  "state_loss_weight": 0.9803520155034677,
+  "label_smoothing": 0.08090646775651301,
+  "batch_size": 256
+ },
+ "feature_preset": "full",
+ "n_features": 13
+}

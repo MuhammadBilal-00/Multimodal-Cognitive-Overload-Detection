@@ -1,0 +1,5 @@
+model,macro_f1,accuracy,qwk
+tcn_tuned,0.3081,0.499,0.1687
+random_forest,0.2669,0.5263,0.166
+gradient_boosting,0.2907,0.507,0.162
+stacked_ensemble,0.258,0.5103,0.1616

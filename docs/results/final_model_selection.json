@@ -1,0 +1,60 @@
+{
+ "points": {
+  "tuned_tcn": 0.3081,
+  "gradient_boosting": 0.2907,
+  "stacked_ensemble": 0.258
+ },
+ "iterations": 2000,
+ "pairwise": {
+  "tuned_tcn_vs_gradient_boosting": {
+   "tuned_tcn_ci_95": [
+    0.2828,
+    0.3354
+   ],
+   "gradient_boosting_ci_95": [
+    0.272,
+    0.3104
+   ],
+   "diff_point": 0.0174,
+   "diff_ci_95": [
+    -0.0129,
+    0.0482
+   ],
+   "two_sided_p_value": 0.283
+  },
+  "tuned_tcn_vs_stacked_ensemble": {
+   "tuned_tcn_ci_95": [
+    0.2834,
+    0.336
+   ],
+   "stacked_ensemble_ci_95": [
+    0.2472,
+    0.2688
+   ],
+   "diff_point": 0.0501,
+   "diff_ci_95": [
+    0.0252,
+    0.0781
+   ],
+   "two_sided_p_value": 0.0
+  },
+  "gradient_boosting_vs_stacked_ensemble": {
+   "gradient_boosting_ci_95": [
+    0.2714,
+    0.3115
+   ],
+   "stacked_ensemble_ci_95": [
+    0.2471,
+    0.2685
+   ],
+   "diff_point": 0.0327,
+   "diff_ci_95": [
+    0.0161,
+    0.0502
+   ],
+   "two_sided_p_value": 0.0
+  }
+ },
+ "winner_by_point_estimate": "tuned_tcn",
+ "method": "paired cluster bootstrap, resampling unit = clip ID, reusing significance.py's clip_bootstrap()"
+}
