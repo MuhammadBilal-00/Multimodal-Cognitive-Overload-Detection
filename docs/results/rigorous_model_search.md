@@ -175,15 +175,44 @@ checkpoint):
 **The stacking attempt failed, honestly reported rather than hidden**: even after
 fixing the meta-learner weighting bug, the ensemble scores *below every individual base
 learner* on macro-F1. This is the single most direct attempt in this whole project at
-actually fixing "the core deliverable is weak" (issue #1), and it did not work. A
-plausible reason, not fully diagnosed further given time constraints: the three base
-learners may already be too correlated (all trained on the same 13 geometric features,
-just with different function classes) for stacking to add information beyond what any
-one of them captures alone, and/or the OOF fold-trained TCN (reduced epoch budget, ~80%
-of Train per fold) and the full-Train-trained TCN used at final evaluation may differ
-enough in calibration that the meta-learner — fit only on the OOF-scale distribution —
-doesn't generalise cleanly to the full-Train-scale one. Recorded as a limitation and
-candidate for follow-up (see Future Work below), not smoothed over.
+actually fixing "the core deliverable is weak" (issue #1), and it did not work.
+
+**Root cause, diagnosed directly rather than left speculative** (post-commit follow-up,
+same day): the ensemble's confusion matrix on Validation shows it **never predicts
+class 0 ("very low") or class 1 ("low") for any of the 11,432 windows** — every
+prediction lands on class 2 or 3. That alone drives both rare classes' F1 to exactly
+0.0 and accounts for most of the macro-F1 gap. Two initially plausible explanations
+were tested directly and both ruled out: (a) base-learner correlation — pairwise
+prediction agreement is actually fairly low (TCN vs. RF 63.0%, TCN vs. GBM 62.3%, RF vs.
+GBM 75.6%), so the base learners are not simply redundant; (b) an OOF/full-Train
+calibration mismatch (the OOF-trained TCN used a 30-epoch/~80%-of-Train budget per
+fold, while the final-evaluation TCN reused Phase 3's 100-epoch/full-Train checkpoint)
+— a real, measurable distribution shift was confirmed (TCN's OOF-predicted class-1 rate
+was 6.85% vs. 3.45% at full-budget Validation time), but retraining a
+budget-consistent TCN and re-running the ensemble with it changed Validation macro-F1
+by 0.0002 (0.2580 → 0.2578) — not the cause.
+
+**The actual cause: the unweighted meta-learner over-trusts the random forest's
+majority-class overconfidence.** The meta-learner's fitted coefficients give the random
+forest's probability block 3.6x the mean weight of the TCN's block (mean |coefficient|
+1.399 vs. 0.384). Random forest, despite its own `class_weight="balanced"` training,
+essentially never predicts the rare classes on real Validation data — only 12 of 11,432
+windows get an RF vote for class 0 or 1, against a true combined prevalence of 1,328. A
+plain (unweighted) logistic-regression meta-learner, fit on OOF data where classes 2+3
+are >95% of samples, is trained to minimise an objective the majority classes dominate
+almost entirely — it learns to trust RF's confident, consistent majority-class
+signal and effectively discards the weaker but real minority-class signal the TCN and
+GBM individually carry. The TCN alone, despite far noisier predictions overall, still
+achieves 12% recall on class 0 and 8% on class 1 (`docs/results/rigorous_model_search.md`
+confusion-matrix check below) — specifically *because* its own training loss
+(inverse-frequency-weighted cross-entropy) forces it to. The meta-learner has no
+equivalent forcing function once unweighted, and the earlier `class_weight="balanced"`
+version's over-correction (documented above) destabilised it in the opposite direction
+instead of fixing this. This is a known stacking pitfall under severe class imbalance —
+an unweighted meta-learner gravitates toward whichever base learner is most reliably
+*confident* on the majority classes, not whichever carries the most total information —
+and it is the reason this ensemble underperforms every one of its own inputs, not
+base-learner redundancy or a calibration bug.
 
 ## Phase 5 — Final selection with significance testing
 
@@ -280,12 +309,16 @@ hyperparameter optimisation, an ensemble attempt) did not find one.
 
 ## Future work suggested by this pipeline specifically
 
-- **Diagnose the ensemble's failure properly** rather than accepting the negative
-  result at face value: check base-learner prediction correlation directly (are RF/
-  GBM/TCN making highly correlated errors, which would explain why stacking adds
-  nothing), and try training the OOF fold-level TCN at the same budget as the final
-  full-Train TCN to rule out a calibration mismatch between OOF-scale and
-  full-Train-scale probability distributions as the cause.
+- **A class-imbalance-aware meta-learner objective, given the diagnosed cause above.**
+  Now that the ensemble's failure is understood precisely (an unweighted meta-learner
+  over-trusts RF's majority-class confidence and abandons rare-class signal; a fully
+  `class_weight="balanced"` meta-learner over-corrects into instability), the next
+  concrete step is a middle ground — a moderate, tuned `class_weight` dict or
+  `sample_weight` schedule for the meta-learner specifically (distinct from, and likely
+  softer than, the `"balanced"` setting used throughout the rest of this project), or
+  dropping the random forest from the stack given its near-total blindness to the rare
+  classes and re-fitting on just TCN + gradient boosting. Not attempted in this pass —
+  the diagnosis was the deliverable, not a guaranteed fix.
 - **A full 5-fold (not 2-fold) hyperparameter search**, given more compute time/a more
   interruption-resistant environment than was available for this pass, to confirm the
   2-fold search proxy didn't systematically bias the selected configuration.
