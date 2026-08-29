@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Track B — in-browser inference app
 
-## Getting Started
+Next.js (App Router, TypeScript strict) application that runs the entire
+cognitive-state pipeline client-side: webcam → MediaPipe FaceLandmarker
+(WASM, CPU delegate) → 13 geometric features (`lib/features.ts`, a literal
+port of `ml/src/features.py` per `../CONTRACT.md` §2–4) → 30-frame ring
+buffer → standardise via `public/model/scaler.json` → ONNX Runtime Web
+(int8, `public/model/model_int8.onnx`) → dashboard. No frame, feature, or
+prediction ever leaves the machine; `next.config.mjs` enforces the egress
+lock and cross-origin isolation (see `../docs/privacy.md`).
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Requires Node.js 20+.
+
+```powershell
+npm install    # postinstall copies onnxruntime-web + MediaPipe WASM into
+               # public/ort and public/mediapipe (gitignored, regenerated)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Download the MediaPipe model asset (gitignored — self-hosted so the app
+works offline; same file Track A uses):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```powershell
+Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task" -OutFile public\models\face_landmarker.task
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```powershell
+npm run dev    # http://localhost:3000 — allow camera access
+npm run build && npm start   # production
+```
 
-## Learn More
+## Tests
 
-To learn more about Next.js, take a look at the following resources:
+```powershell
+npm test              # vitest unit suite (features, states order, scaler,
+                      # ring buffer, primary face, inference contract)
+npm run test:parity   # J1 Python<->TS feature-parity gate (Playwright;
+                      # needs the DAiSEE-derived fixture — see
+                      # ml/scripts/make_parity_fixture.py — and the model
+                      # asset above; writes docs/results/parity_report.json)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Load-bearing invariants (each has a guard; do not relax casually)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Two separate landmarkers** (`lib/faceLandmarker.ts`): `numFaces: 1`
+  feeds the model (matches training extraction; `numFaces: 4` shifts
+  landmarks enough to fail J1 on blinks — CONTRACT.md Amendment 2);
+  `numFaces: 4` drives the overlay/People count only.
+- **CPU delegate only** — the GPU delegate fails the parity gate
+  (`docs/results/parity_report_gpu.json`).
+- **States channel order** is `lib/states.ts` (`boredom, engagement,
+  confusion, frustration`), guarded by `tests/states.test.ts`, which parses
+  `ml/src/labels.py` from disk — CONTRACT.md §5 Amendment 3.
+- **Brow eye-centre is the corner midpoint**, not the 6-landmark centroid
+  — CONTRACT.md Amendment 4; guarded by `tests/features.test.ts`.
+- Softmax on `engagement`, sigmoid on `states`, standardisation outside
+  the graph — CONTRACT.md §5; guarded by `tests/inferenceContract.test.ts`.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`/parity-test` and `/api/parity-fixtures` are development/test-only routes
+(disabled in production builds) used by the J1 gate.

@@ -1,0 +1,24 @@
+{
+ "recorded_utc": "2026-08-29T10:31:51+00:00",
+ "duration_s": 75,
+ "server": "production build, next start on localhost:3100",
+ "reached_live_at_s": 7.3,
+ "total_requests": 39,
+ "origins_contacted": [
+  "http://localhost:3100"
+ ],
+ "external_requests": [],
+ "csp_violation_lines": [
+  "[error] Connecting to 'https://odml.pa.googleapis.com/v1/log' violates the following Content Security Policy directive: \"connect-src 'self'\". The action has been blocked.",
+  "[error] Fetch API cannot load https://odml.pa.googleapis.com/v1/log. Refused to connect because it violates the document's Content Security Policy.",
+  "[error] Connecting to 'https://odml.pa.googleapis.com/v1/log' violates the following Content Security Policy directive: \"connect-src 'self'\". The action has been blocked.",
+  "[error] Fetch API cannot load https://odml.pa.googleapis.com/v1/log. Refused to connect because it violates the document's Content Security Policy."
+ ],
+ "telemetry_block_observed": true,
+ "unexpected_csp_violations": [],
+ "verdict": {
+  "zero_external_requests": true,
+  "app_reached_live_under_full_csp": true,
+  "only_expected_csp_violations": true
+ }
+}

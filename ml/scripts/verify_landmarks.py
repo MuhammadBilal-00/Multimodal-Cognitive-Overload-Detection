@@ -111,39 +111,69 @@ def sanity_checks(lm: np.ndarray) -> list[str]:
     return msgs
 
 
-def render(lm: np.ndarray, rgb: np.ndarray, out_dir: Path) -> None:
+def render(lm: np.ndarray, rgb: np.ndarray, out_dir: Path,
+           source_note: str = "") -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
+    import matplotlib.patheffects as pe
 
-    # Overview: whole face, every group in its colour.
-    fig, ax = plt.subplots(figsize=(10, 12))
-    ax.imshow(rgb)
+    # Face bounding box (all landmarks + margin) — the overview crops to it
+    # so the figure is about the face, not the room around it.
+    xs_all, ys_all = lm[:, 0], lm[:, 1]
+    mx = (xs_all.max() - xs_all.min()) * 0.35
+    my = (ys_all.max() - ys_all.min()) * 0.35
+    x0 = max(0, int(xs_all.min() - mx)); x1 = min(rgb.shape[1], int(xs_all.max() + mx))
+    y0 = max(0, int(ys_all.min() - my)); y1 = min(rgb.shape[0], int(ys_all.max() + my))
+
+    # Overview: cropped to the face, legend OUTSIDE the axes so it never
+    # covers the region the figure exists to show.
+    fig, ax = plt.subplots(figsize=(8, 9), constrained_layout=True)
+    ax.imshow(rgb[y0:y1, x0:x1])
     for name, (indices, colour) in GROUPS.items():
-        xs = [lm[i, 0] for i in indices]
-        ys = [lm[i, 1] for i in indices]
-        ax.scatter(xs, ys, s=14, c=colour, label=name)
-    ax.legend(loc="upper right", fontsize=9)
+        gx = [lm[i, 0] - x0 for i in indices]
+        gy = [lm[i, 1] - y0 for i in indices]
+        ax.scatter(gx, gy, s=22, c=colour, label=name, edgecolors="white",
+                   linewidths=0.4)
+    ax.legend(loc="center left", bbox_to_anchor=(1.01, 0.5), fontsize=9,
+              frameon=False)
     ax.set_title("Contract landmark groups — overview (un-mirrored image)")
-    ax.axis("off")
-    fig.savefig(out_dir / "landmarks_overview.png", dpi=150, bbox_inches="tight")
+    if source_note:
+        ax.set_xlabel(source_note, fontsize=7, color="0.4")
+        ax.xaxis.set_label_coords(0.5, -0.02)
+        ax.tick_params(bottom=False, left=False,
+                       labelbottom=False, labelleft=False)
+        for s in ax.spines.values():
+            s.set_visible(False)
+    else:
+        ax.axis("off")
+    fig.savefig(out_dir / "landmarks_overview.png", dpi=150,
+                bbox_inches="tight")
     plt.close(fig)
 
     # Zoom panels: one per group, every point labelled with its index.
-    fig, axes = plt.subplots(2, 4, figsize=(22, 11))
+    # constrained_layout + a shared grid keep rows aligned; index labels are
+    # white with a black stroke so they survive any skin tone, greyscale
+    # printing, and projectors (the old yellow-on-skin labels did not).
+    fig, axes = plt.subplots(2, 4, figsize=(20, 10), constrained_layout=True)
     for ax, (name, (indices, colour)) in zip(axes.flat, GROUPS.items()):
         xs = np.array([lm[i, 0] for i in indices])
         ys = np.array([lm[i, 1] for i in indices])
         pad = max(xs.max() - xs.min(), ys.max() - ys.min()) * 0.6 + 12
-        ax.imshow(rgb)
-        ax.scatter(xs, ys, s=30, c=colour)
+        ax.imshow(rgb, interpolation="bilinear")
+        ax.scatter(xs, ys, s=34, c=colour, edgecolors="white", linewidths=0.6)
         for i, x, y in zip(indices, xs, ys):
-            ax.annotate(str(i), (x, y), xytext=(3, -3),
+            ax.annotate(str(i), (x, y), xytext=(4, -4),
                         textcoords="offset points", fontsize=11,
-                        color="yellow", weight="bold")
-        ax.set_xlim(xs.min() - pad, xs.max() + pad)
-        ax.set_ylim(ys.max() + pad, ys.min() - pad)  # y inverted for image
-        ax.set_title(name)
+                        color="white", weight="bold",
+                        path_effects=[pe.withStroke(linewidth=2.2,
+                                                    foreground="black")])
+        cx, cy = (xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2
+        half = max(xs.max() - xs.min(), ys.max() - ys.min()) / 2 + pad
+        ax.set_xlim(cx - half, cx + half)
+        ax.set_ylim(cy + half, cy - half)  # y inverted; square window
+        ax.set_aspect("equal")
+        ax.set_title(name, fontsize=12)
         ax.axis("off")
-    fig.suptitle("Contract landmark indices, zoomed per group", fontsize=14)
+    fig.suptitle("Contract landmark indices, zoomed per group", fontsize=15)
     fig.savefig(out_dir / "landmarks_zoom.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
@@ -155,12 +185,15 @@ def main() -> None:
                         default=REPO_ROOT / "ml" / "assets" / "face_landmarker.task")
     parser.add_argument("--out", type=Path,
                         default=REPO_ROOT / "docs" / "verification")
+    parser.add_argument("--source-note", default="",
+                        help="image attribution line rendered under the "
+                             "overview figure (e.g. licence/source)")
     args = parser.parse_args()
 
     lm, rgb = detect_pixels(args.image, args.model)
     for msg in sanity_checks(lm):
         print(msg)
-    render(lm, rgb, args.out)
+    render(lm, rgb, args.out, source_note=args.source_note)
     print(f"Saved overview + zoom figures to {args.out}")
 
 

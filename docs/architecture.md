@@ -20,7 +20,7 @@ flowchart TD
         Buf -->|"isFull(), every 30th sample = every 3 s"| Std["standardise()\n(x-mean)/std via scaler.json"]
         Std --> Ort["onnxruntime-web session\nWASM, created once"]
         Ort -->|"engagement[4], states[4]\nraw logits"| Post["softmax / sigmoid\n(in JS, not the graph)"]
-        Post --> UI["Dashboard\nPredictionPanel · FeaturePanel · PerfHUD"]
+        Post --> UI["Dashboard\nPredictionPanel · FeaturePanel · PerfHUD\nTrendChart/Sparkline · LandmarkOverlay"]
     end
 
     Assets["Self-hosted:\n/ort/*.wasm · /mediapipe/wasm/*\n/models/face_landmarker.task\n/model/model_int8.onnx + scaler.json"] -.->|"same-origin fetch,\nload-time only"| Loop
@@ -72,3 +72,14 @@ the server pass tried to import `onnxruntime-web`/`@mediapipe/tasks-vision`
 too. `app/page.tsx` loads the real dashboard (`components/CognitiveApp.tsx`)
 through a client-only dynamic import so that module graph never reaches the
 server bundle at all.
+
+
+## Channel-order invariant (`web/lib/states.ts`)
+
+The four `states` sigmoid outputs are consumed by index; the ONLY place an
+index becomes a name is `web/lib/states.ts` (`boredom, engagement,
+confusion, frustration` — CONTRACT.md §5 Amendment 3, deliberately not
+alphabetical). Its order is guarded by `web/tests/states.test.ts`, which
+parses `ml/src/labels.py` from disk so the two sides cannot silently
+diverge — the exact failure that shipped once (fixed 2026-08-16, commit
+`2e95fe4`) and motivated both the amendment and the guard.

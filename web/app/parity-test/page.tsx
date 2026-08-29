@@ -50,10 +50,19 @@ declare global {
   }
 }
 
+// Test-only route: the J1 gate drives it against `next dev`
+// (playwright.config.ts webServer). Its companion fixture API is disabled
+// in production; short-circuit the harness there rather than leaving a
+// permanently-failing test page. (Checked inside the effect, not via an
+// early return, so the hooks order is unconditional.)
+const IS_PROD = process.env.NODE_ENV === 'production';
+
 export default function ParityTestPage() {
-  const [status, setStatus] = useState('running…');
+  const [status, setStatus] = useState(
+    IS_PROD ? 'parity harness is development-only' : 'running…');
 
   useEffect(() => {
+    if (IS_PROD) return;
     let cancelled = false;
     (async () => {
       const result: ParityResult = {

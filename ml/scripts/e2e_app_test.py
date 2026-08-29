@@ -80,7 +80,14 @@ def main() -> None:
                 "--use-fake-ui-for-media-stream",
                 f"--use-file-for-fake-video-capture={y4m}",
             ])
-            context = browser.new_context(permissions=["camera"])
+            # bypass_csp: the app's production CSP (script-src without
+            # 'unsafe-eval') correctly blocks Playwright's eval-injected
+            # wait_for_function/evaluate — a tooling constraint, not an app
+            # bug. Functionality-under-CSP is validated separately by
+            # ml/scripts/privacy_trace.py, which drives the page without
+            # main-world eval and fails on any unexpected CSP violation.
+            context = browser.new_context(permissions=["camera"],
+                                          bypass_csp=True)
             page = context.new_page()
             console = []
             page.on("console", lambda m: console.append(f"[{m.type}] {m.text}"))
@@ -100,7 +107,12 @@ def main() -> None:
             # second prediction under the current cadence.
             time.sleep(4)
             state = page.evaluate("window.__ENGINE_STATE")
-            page.screenshot(path=str(RESULTS_DIR / "app_screenshot.png"),
+            # Screenshot goes to gitignored artifacts/, NOT docs/results/:
+            # the fake-camera feed is a DAiSEE clip, so the frame contains a
+            # dataset participant's face and must never enter the repo (the
+            # same licence rule as the raw clips). A committed-safe app
+            # screenshot must be captured separately with a non-DAiSEE face.
+            page.screenshot(path=str(SCRATCH / "app_screenshot_e2e.png"),
                             full_page=True)
             browser.close()
 

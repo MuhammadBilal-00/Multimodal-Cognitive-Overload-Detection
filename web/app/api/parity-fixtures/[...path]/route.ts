@@ -20,6 +20,13 @@ export async function GET(
   _req: Request,
   { params }: { params: { path: string[] } },
 ) {
+  // Test-only: a fixture server for licence-restricted DAiSEE-derived data
+  // has no business existing in a deployed instance. The J1 gate runs
+  // against `next dev` (playwright.config.ts webServer), so disabling this
+  // outside development costs nothing and closes the exposure.
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse('not available in production', { status: 404 });
+  }
   const filePath = path.resolve(FIXTURES_ROOT, path.join(...params.path));
   // Path-traversal guard: resolved path must stay inside FIXTURES_ROOT.
   if (filePath !== FIXTURES_ROOT && !filePath.startsWith(FIXTURES_ROOT + path.sep)) {

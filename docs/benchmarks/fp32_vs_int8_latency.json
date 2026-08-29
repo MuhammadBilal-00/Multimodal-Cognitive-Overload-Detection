@@ -1,0 +1,23 @@
+{
+ "note": "Python onnxruntime CPU EP, single-window inference, 300 real standardised Validation windows, 20-run warmup. Isolates the quantization latency effect on identical hardware/runtime; browser-side numbers live in the other files in this directory.",
+ "onnxruntime_version": "1.28.0",
+ "fp32": {
+  "model": "model_fp32.onnx",
+  "size_bytes": 167243,
+  "runs": 300,
+  "mean_ms": 0.0703,
+  "p50_ms": 0.0691,
+  "p95_ms": 0.0835,
+  "p99_ms": 0.1081
+ },
+ "int8": {
+  "model": "model_int8.onnx",
+  "size_bytes": 61650,
+  "runs": 300,
+  "mean_ms": 0.0773,
+  "p50_ms": 0.0757,
+  "p95_ms": 0.0893,
+  "p99_ms": 0.1478
+ },
+ "speedup_p50": 0.913
+}

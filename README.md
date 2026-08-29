@@ -39,12 +39,13 @@ flowchart TD
     Assets["Self-hosted:\n/ort/*.wasm · /mediapipe/wasm/*\n/models/face_landmarker.task\n/model/model_int8.onnx + scaler.json"] -.->|"same-origin fetch,\nload-time only"| Loop
     Assets -.-> Ort
 
-    CSP["CSP: connect-src 'self'\n+ COOP/COEP"] -.->|enforces| Browser
+    CSP["CSP: default-src 'self' lockdown\n+ COOP/COEP + Permissions-Policy"] -.->|enforces| Browser
 ```
 
-No server, no CDN, no third-party origin: `next.config.mjs` ships
-`Content-Security-Policy: connect-src 'self'`, which makes any cross-origin
-network call fail closed at the browser level regardless of what any
+No server, no CDN, no third-party origin: `next.config.mjs` ships a
+full CSP lockdown (`default-src 'self'` with `connect-src 'self'`, plus
+`Permissions-Policy: camera=(self)`, COOP/COEP), which makes cross-origin
+requests fail closed at the browser level regardless of what any
 dependency tries to do — see `docs/privacy.md` for why that header exists
 and the real telemetry call it blocks. Stage-by-stage breakdown (file
 references, timing, and the two production-build fixes that shaped this

@@ -137,14 +137,55 @@ requests after reaching "live": 0
 
 ## 4. What this does and doesn't prove
 
-- **Proves:** with the app as shipped, no code path — first-party or
-  third-party — can reach any host except the one serving the page, and
-  this holds for a real inference session, not just a static analysis.
-- **Doesn't prove:** what a *future* dependency bump might try to do.
-  `connect-src 'self'` is exactly the guard for that case: it doesn't rely
-  on re-auditing every future `npm update`.
+- **Proves:** with the app as shipped, no *observed* code path —
+  first-party or third-party — reached any host except the one serving the
+  page, across a real recorded inference session, and the one attempt that
+  was made (the MediaPipe telemetry POST) was blocked by policy.
+- **Precision on the policy's scope** (corrected 2026-08-29 — an earlier
+  version of this section claimed `connect-src 'self'` alone meant "no
+  code path can reach any host", which overstated it): `connect-src`
+  governs fetch/XHR/WebSocket/EventSource/sendBeacon only. It does NOT
+  govern `<img>` pixels, `<script>`/`<iframe>` loads, form submission, or
+  WebRTC. Those routes are now closed by the full policy shipped in
+  `next.config.mjs` (`default-src 'self'`, `object-src 'none'`,
+  `form-action 'self'`, `frame-ancestors 'none'`, plus
+  `Permissions-Policy: camera=(self), microphone=(), geolocation=()`,
+  `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`) — see
+  §5 for the re-verification under that full policy.
+- **Doesn't prove:** what a *future* dependency bump might try to do. The
+  browser-enforced policy is exactly the guard for that case: it doesn't
+  rely on re-auditing every future `npm update`.
 - **Scope:** this is a same-origin deployment (`localhost` today,
   presumably the same single origin in any future deployment). If the app
-  is ever split across multiple first-party subdomains, this policy would
-  need `connect-src` to list those explicitly rather than relying on
-  `'self'`.
+  is ever split across multiple first-party subdomains, the policy would
+  need those origins listed explicitly rather than relying on `'self'`.
+
+## 5. Re-verification, 2026-08-29 — production build, current UI, full hardened policy
+
+The §2–3 trace was collected 2026-08-03 against the dev server
+(`localhost:3001`) and a UI that was substantially rewritten on 2026-08-10;
+it is kept above as the record of the original telemetry discovery. The
+trace is now a committed, re-runnable script —
+`ml/scripts/privacy_trace.py` — and was re-run against the **production**
+build (`next start`, `localhost:3100`) of the current application under the
+**full** header set described in §4, with the page's CSP fully enforced
+(no automation bypass). Result (`docs/results/privacy_trace.json`):
+
+```
+reached "Live":            7.3 s after navigation
+recording window:          75 s (past the ~60 s telemetry flush)
+total requests:            39 — every one same-origin (load-time assets)
+origins contacted:         http://localhost:3100 only
+external requests:         0
+telemetry block observed:  yes — 2 attempts to POST
+                           https://odml.pa.googleapis.com/v1/log, both
+                           refused by connect-src 'self' (console lines
+                           captured verbatim in the JSON)
+unexpected CSP violations: 0  (i.e. the hardened policy breaks nothing —
+                           the app reaches live with real predictions
+                           under it)
+```
+
+The run fails loudly — not silently — if any external request is observed
+or if any CSP violation other than the expected telemetry block appears,
+so this evidence can be regenerated for any future build with one command.
