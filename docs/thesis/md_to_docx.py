@@ -11,7 +11,7 @@ from pathlib import Path
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Pt, RGBColor
+from docx.shared import Inches, Pt, RGBColor
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
@@ -99,6 +99,27 @@ def build(doc, lines):
                                 run.bold = True
                             set_cell_shading(cell, "D9E2F3")
                 doc.add_paragraph("")
+            continue
+
+        # image: ![caption](path) — path relative to the REPO ROOT, embedded
+        # at up to 6.2in width with the caption as a small centred line below.
+        img = re.match(r"^!\[(.*)\]\((.+)\)$", stripped)
+        if img:
+            caption, rel_path = img.group(1), img.group(2)
+            img_path = (SRC.parent.parent.parent / rel_path).resolve()
+            if img_path.exists():
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p.add_run().add_picture(str(img_path), width=Inches(6.2))
+                if caption:
+                    cp = doc.add_paragraph()
+                    cp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    run = cp.add_run(caption)
+                    run.italic = True
+                    run.font.size = Pt(9)
+            else:
+                doc.add_paragraph(f"[missing image: {rel_path}]")
+            i += 1
             continue
 
         m = re.match(r"^(#{1,3})\s+(.*)$", stripped)
