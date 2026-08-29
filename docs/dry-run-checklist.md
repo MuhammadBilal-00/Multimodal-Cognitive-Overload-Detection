@@ -53,7 +53,7 @@ you're not guessing live:
 
 | Trigger | Say before | Expected (per `docs/demo-failure-modes.md`) |
 |---|---|---|
-| Step out of frame | "Watch the feature panel zero out, not freeze" | All 13 features → 0.0000, `face_present=0`, dashboard stays live, no crash |
+| Step out of frame | "Watch the readings suppress themselves, not freeze — the model refuses to guess about an empty room" | All 13 features → 0.0000, `face_present=0`; engagement shows "— no face", state bars show em-dashes, trend holds its last real points (no garbage spike), dashboard stays live |
 | Bring a second person into frame | "Watch it pick one primary face and dim the other" | Overlay: cyan on primary (larger/closer face), dimmed gray on the other; "People" count increments |
 | Cover part of the light / turn off the room light | "Either it keeps tracking or cleanly reports no-detection — never garbage in between" | Verified at two severities: moderate dimming still detects; severe darkness reports clean no-detection |
 | Put on glasses (or have someone who wears them step in) | "Iris landmarks are the part most likely to struggle with glasses glare" | Verified clean in testing — full 478-landmark detection, gaze features populated, no degradation observed in that test's lighting |

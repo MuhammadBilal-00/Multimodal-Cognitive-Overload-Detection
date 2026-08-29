@@ -48,6 +48,10 @@ export default function CognitiveApp() {
   useEffect(() => {
     if (!prediction || prediction === lastPred.current) return;
     lastPred.current = prediction;
+    // No-face windows produce arbitrary model output (see PredictionPanel's
+    // suppression note) — keep them out of the trend so the chart holds its
+    // last real readings instead of spiking to garbage.
+    if (prediction.ood.noFace) return;
     setHistory((h) => [...h.slice(-19), prediction.states]); // 20 points @ 1 per 3 s = 60 s
   }, [prediction]);
 

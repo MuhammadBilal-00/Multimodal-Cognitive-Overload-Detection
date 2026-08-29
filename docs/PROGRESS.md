@@ -229,6 +229,16 @@ result validated it rather than beating it):
   evidence, CORAL/Optuna references added, AI-use declaration added
   (wording to be verified against university policy).
 
+## Live rehearsal fix — 2026-08-29
+
+First live rehearsal (real webcam, production build) surfaced the one
+imperfect behaviour the 2026-08-09 hardening pass had flagged as an
+observation: stepping out of frame showed the model's arbitrary output
+for an all-empty window ("Frustrated 99%") beneath the no-face notice.
+Fixed: `PredictionPanel` now suppresses readings entirely on
+`ood.noFace` (em-dash placeholders + explanatory notice) and the trend
+chart skips no-face points. Thesis Figure 4.4 recaptured accordingly.
+
 ## Artifact index
 
 | Artifact | What it is |

@@ -20,7 +20,14 @@ const FEATURE_ADVICE: Record<string, string> = {
 export default function PredictionPanel({
   prediction, history,
 }: { prediction: Prediction | null; history: number[][] }) {
-  const level = prediction ? prediction.engagement.indexOf(Math.max(...prediction.engagement)) : null;
+  // No-face windows standardise to extreme out-of-distribution inputs the
+  // model has essentially never seen (DAiSEE detection rate 99.96%), so its
+  // output there is arbitrary — showing "Frustrated 99%" under a no-face
+  // caveat is honest-but-distracting garbage. Suppress the numbers entirely
+  // and show placeholders; the notice below explains why.
+  const noFace = prediction?.ood.noFace ?? false;
+  const level = prediction && !noFace
+    ? prediction.engagement.indexOf(Math.max(...prediction.engagement)) : null;
   const series = STATE_CHANNELS.map((s, i) => ({
     name: s.label,
     color: s.color,
@@ -37,7 +44,9 @@ export default function PredictionPanel({
       <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--foreground-muted)]">Engagement</h2>
       <div className="mt-2 flex items-baseline gap-4">
         <span className="text-6xl font-bold text-[var(--accent)]">{level === null ? '—' : level}</span>
-        <span className="text-2xl text-[var(--foreground)]">{level === null ? 'warming up' : LEVELS[level]}</span>
+        <span className="text-2xl text-[var(--foreground)]">
+          {noFace ? 'no face' : level === null ? 'warming up' : LEVELS[level]}
+        </span>
       </div>
 
       {/* Muted, not red: a close-sitting user is a normal user meeting a real
@@ -46,7 +55,8 @@ export default function PredictionPanel({
       {ood?.noFace && (
         <p role="status" aria-live="polite" className="mt-4 rounded-xl bg-[var(--surface-sunken)] px-3 py-2 text-xs leading-relaxed text-[var(--foreground-muted)]">
           <span className="font-semibold text-[var(--foreground)]">No face detected.</span>{' '}
-          These numbers are from the last 3 seconds, most of which had nobody in frame.
+          Most of the last 3 seconds had nobody in frame, so the model has no
+          meaningful input — readings resume as soon as a face is back.
         </p>
       )}
       {ood && !ood.noFace && ood.outOfDistribution && (
@@ -68,7 +78,7 @@ export default function PredictionPanel({
         </p>
         <div className="mt-3 space-y-3">
           {STATE_CHANNELS.map(({ key, label, color }, i) => {
-            const p = prediction?.states[i] ?? 0;
+            const p = noFace ? 0 : prediction?.states[i] ?? 0;
             return (
               <div key={key} className="flex items-center gap-3">
                 <span className="w-24 text-sm font-medium text-[var(--foreground)]">{label}</span>
@@ -77,7 +87,7 @@ export default function PredictionPanel({
                        style={{ width: `${(p * 100).toFixed(1)}%`, backgroundColor: color }} />
                 </div>
                 <span className="w-12 text-right text-sm font-medium tabular-nums text-[var(--foreground-muted)]">
-                  {(p * 100).toFixed(0)}%
+                  {noFace ? '—' : `${(p * 100).toFixed(0)}%`}
                 </span>
               </div>
             );
