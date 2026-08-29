@@ -178,6 +178,24 @@ All three Phase 1 sub-phases done same day as gap-closure. Full findings:
   tested with real DAiSEE clips driven through a clean build. None
   crashed, froze, or produced a non-normalized/garbage prediction.
 
+## UI redesign and states-channel fix — 2026-08-10 → 2026-08-16
+
+Previously missing from this record (its absence was itself an audit
+finding — Appendix F cites this file as the full day-by-day history):
+
+- **2026-08-10** (`e9f6ba7`): full web UI redesign — light Meet-style
+  theme, real trend chart, hideable stats panels; 9 components rewritten.
+  (A same-day commit `2be9ffb` carries the message "asd" — a sloppy
+  commit message on a minor follow-up, acknowledged rather than hidden.)
+- **2026-08-16** (`2e95fe4`): the states-channel-order defect found and
+  fixed — `PredictionPanel` listed the four states alphabetically while
+  the model emits Boredom/Engagement/Confusion/Frustration, so the
+  "Confused" bar had been displaying P(engagement). Fixed with
+  `web/lib/states.ts` as the single mapping site, guarded by a test that
+  parses `ml/src/labels.py`, documented as CONTRACT.md Amendment 3; the
+  states head was also retrained with per-channel pos_weight (its rare
+  channels had collapsed to base rates), Validation artefacts refreshed.
+
 ## Extended model comparison, rigorous search, honest evaluation — 2026-08-26 → 2026-08-29
 
 Three commits (`dd2c99b`, `9294347`, `1c17a19`) plus this session's

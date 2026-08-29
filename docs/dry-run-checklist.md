@@ -88,14 +88,36 @@ doesn't):
 - Only 1 of the 3 required benchmark machines has been run
   (`docs/benchmarks/README.md` has the runbook for the other two — if
   they're done by defense time, update this line).
-- Macro-F1 numbers (0.2475 fp32 / 0.2460 int8 test) are modest in
-  absolute terms; the comparison that matters is against the
-  majority-class floor (0.1655) and the classical baselines (`baselines.csv`)
-  — the model demonstrably uses temporal structure they can't.
+- Macro-F1 numbers (0.2475 fp32 / 0.2460 int8 test at window level;
+  0.2829 / 44.7% accuracy at the benchmark's clip level with
+  validation-calibrated thresholds, `clip_eval_test.json`) are modest in
+  absolute terms. **Do NOT claim the model beats the classical baselines
+  outright — the panel can check.** The honest, rehearsed answer to "why
+  ship the TCN when gradient boosting beats it on Test
+  (0.2910 vs 0.2475, p<0.001, `significance.json`)?" is: (1) on
+  Validation the two are statistically level (p=0.194); (2) gradient
+  boosting cannot ship — there is no browser-WASM path to a 60 KB
+  quantized tree ensemble, and edge deployment is the project's premise;
+  (3) the TCN beats the recurrent alternatives at matched budgets and a
+  40-trial hyperparameter search could not improve it (p=0.92 vs
+  shipped) — the configuration is validated at its representation's
+  ceiling (`rigorous_model_search.md`); (4) the correct future lever is a
+  richer representation, which is future-work item 4 in the thesis.
+- If Figure 4.3 (Test ROC) is on screen: class 0's below-chance AUC
+  (0.433) is a 32-window / 4-clip sample-size artefact, not an
+  anti-predictive model; class 2's ~0.5 reflects the structural hardness
+  of one-vs-rest scoring for the middle band of an ordinal scale. Both
+  answers are in thesis §4.3.2.
+- If asked "which checkpoint produced your test figures?": the frozen
+  2026-08-02 checkpoint (test consumed exactly once); the shipped
+  browser model is the later states-head retrain, deliberately never
+  re-evaluated on Test — disclosed in thesis §4.3.2, not a discrepancy.
 - The J1 CI job passes on GitHub by correctly *skipping* the actual
   parity assertion (the DAiSEE-derived fixture can't legally be committed
-  there) — it has been exercised, and confirmed to catch a real defect,
-  locally. Say this plainly if asked "is this actually tested in CI."
+  there) — it has been exercised, and confirmed to catch TWO real defects
+  (the numFaces regression and the Amendment 4 brow-formula divergence),
+  locally. The export-parity gate DOES run fully in CI on every push.
+  Say all of this plainly if asked "is this actually tested in CI."
 
 ## Go / no-go before tagging `v1.0`
 

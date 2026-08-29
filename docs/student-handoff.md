@@ -191,18 +191,32 @@ Walk through it top to bottom and have her explain each piece back:
    results, for direct comparability.
 
 4. **The output** — `docs/results/baselines.csv`, columns
-   `split, model, macro_f1, accuracy`. Have her open it and, for each row,
-   say out loud which of the four scenarios above it represents.
+   `split, model, macro_f1, accuracy, qwk` (the last is quadratic
+   weighted kappa, an ordinal-aware companion metric added in Experiment
+   7 — she should be able to say why an ordinal label makes plain
+   macro-F1 incomplete). Have her open it and, for each row, say out loud
+   which of the scenarios above it represents.
 
 **Real numbers to check her against** (already produced, both splits):
 majority-class macro-F1 is 0.1813 (Validation) / 0.1655 (Test) — and
 these were cross-checked to match `metrics_{validation,test}.csv`'s own
 majority-class row exactly, which is itself worth asking her to verify by
 opening both files side by side. The TCN's validation macro-F1 (0.3061)
-beats logreg (0.242) and random forest (0.2669) — she should be able to
-say what that comparison actually establishes: that the model uses the
-*temporal structure* the baselines' aggregate features throw away, not
-just more parameters.
+beats logreg (0.242) and random forest (0.2669) — **but she must know the
+full, corrected story, because the panel will**: the strongest classical
+baseline added later, gradient boosting, reaches 0.2907 on Validation
+(the TCN's lead over it is NOT statistically significant — p=0.194,
+`docs/results/significance.json`) and 0.2910 on Test, where it
+*significantly beats* the TCN's 0.2475 (p<0.001). The honest claim is
+therefore NOT "the TCN uses temporal structure the baselines can't and
+therefore wins" — it is: the TCN is statistically level with the best
+classical method on validation, loses to it on test, and is shipped
+because it is the only one of the candidates that meets the deployment
+constraint (a 60 KB int8 ONNX graph running in browser WASM — a tree
+ensemble has no comparable path), with a 40-trial search later confirming
+its configuration sits at the representation's ceiling
+(`docs/results/rigorous_model_search.md`). If she can explain *that*
+chain, she is ready for the hardest baseline question the panel can ask.
 
 ---
 
@@ -262,10 +276,16 @@ thesis.
 
 **Q: Why quantize to int8, and what does it cost?**
 A: The edge-deployment story depends on the model being genuinely tiny
-and fast in-browser. Quantization took the model from 163 KB (fp32) to
-60 KB (int8) — roughly 4× — for a measured macro-F1 cost of −0.0015 on
-Test. That tradeoff table (`docs/results/quantization.csv`) is itself a
-result worth including, not just an implementation detail.
+in-browser. Quantization took the model from 163 KB (fp32) to 60 KB
+(int8) — 2.7× — for a measured macro-F1 cost of −0.0015 on Test
+(`docs/results/quantization_test.csv`; the Validation-split version is
+`quantization.csv`). One honest wrinkle to volunteer before being asked:
+int8 is actually ~9% *slower* than fp32 in native onnxruntime at this
+tiny model size (`docs/benchmarks/fp32_vs_int8_latency.json`) — the
+QDQ dequantise overhead outweighs integer gains on a 41k-parameter net.
+The quantization's real value is the payload size and the WASM operator
+compatibility (dynamic quantization's ConvInteger doesn't exist in
+onnxruntime-web), not speed.
 
 **Q: Why is this project "multimodal" if DAiSEE has no audio?**
 A: Checked explicitly on Day 1 (`ffprobe` on 9 clips across all splits) —
