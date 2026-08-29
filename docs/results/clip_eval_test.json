@@ -1,0 +1,60 @@
+{
+ "split": "Test",
+ "checkpoint": "artifacts\\runs\\20260801_185630\\best.pt",
+ "n_clips": 1784,
+ "n_windows": 14241,
+ "clip_label_counts": [
+  4,
+  84,
+  882,
+  814
+ ],
+ "window_level_4class": {
+  "accuracy": 0.3686,
+  "macro_f1": 0.2475,
+  "qwk": 0.0819,
+  "macro_f1_3class_merged": 0.3318,
+  "accuracy_3class_merged": 0.3764
+ },
+ "clip_level_4class_meanprob": {
+  "accuracy": 0.3638,
+  "macro_f1": 0.2482,
+  "qwk": 0.0891,
+  "macro_f1_3class_merged": 0.332,
+  "accuracy_3class_merged": 0.3722
+ },
+ "clip_level_4class_majorityvote": {
+  "accuracy": 0.3643,
+  "macro_f1": 0.2468,
+  "qwk": 0.0887,
+  "macro_f1_3class_merged": 0.3312,
+  "accuracy_3class_merged": 0.3728
+ },
+ "clip_level_binary_screening": {
+  "prevalence_disengaged": 0.0493,
+  "accuracy": 0.7769,
+  "balanced_accuracy": 0.6187,
+  "roc_auc": 0.6834,
+  "sensitivity_recall_disengaged": 0.4432,
+  "specificity_recall_engaged": 0.7942,
+  "confusion": {
+   "tp": 39,
+   "fp": 349,
+   "tn": 1347,
+   "fn": 49
+  }
+ },
+ "clip_level_4class_valfrozen_offsets": {
+  "accuracy": 0.4467,
+  "macro_f1": 0.2829,
+  "qwk": 0.1018,
+  "macro_f1_3class_merged": 0.3724,
+  "accuracy_3class_merged": 0.4524
+ },
+ "valfrozen_offsets": [
+  -0.6,
+  -0.7,
+  0.0,
+  0.0
+ ]
+}

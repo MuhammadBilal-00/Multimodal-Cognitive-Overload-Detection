@@ -1,0 +1,60 @@
+{
+ "split": "Validation",
+ "checkpoint": "artifacts\\runs\\20260815_181604\\best.pt",
+ "n_clips": 1429,
+ "n_windows": 11432,
+ "clip_label_counts": [
+  23,
+  143,
+  813,
+  450
+ ],
+ "window_level_4class": {
+  "accuracy": 0.4433,
+  "macro_f1": 0.3043,
+  "qwk": 0.133,
+  "macro_f1_3class_merged": 0.4068,
+  "accuracy_3class_merged": 0.4601
+ },
+ "clip_level_4class_meanprob": {
+  "accuracy": 0.4563,
+  "macro_f1": 0.3099,
+  "qwk": 0.1363,
+  "macro_f1_3class_merged": 0.4116,
+  "accuracy_3class_merged": 0.471
+ },
+ "clip_level_4class_majorityvote": {
+  "accuracy": 0.4458,
+  "macro_f1": 0.3099,
+  "qwk": 0.1495,
+  "macro_f1_3class_merged": 0.4085,
+  "accuracy_3class_merged": 0.4619
+ },
+ "clip_level_binary_screening": {
+  "prevalence_disengaged": 0.1162,
+  "accuracy": 0.7845,
+  "balanced_accuracy": 0.5955,
+  "roc_auc": 0.6396,
+  "sensitivity_recall_disengaged": 0.3494,
+  "specificity_recall_engaged": 0.8416,
+  "confusion": {
+   "tp": 58,
+   "fp": 200,
+   "tn": 1063,
+   "fn": 108
+  }
+ },
+ "clip_level_4class_threshold_tuned": {
+  "accuracy": 0.5283,
+  "macro_f1": 0.326,
+  "qwk": 0.121,
+  "macro_f1_3class_merged": 0.423,
+  "accuracy_3class_merged": 0.5353
+ },
+ "tuned_offsets": [
+  -0.6,
+  -0.7,
+  0.0,
+  0.0
+ ]
+}

@@ -94,6 +94,30 @@ class FocalLoss(nn.Module):
         return ((1.0 - p_t) ** self.gamma * ce).mean()
 
 
+AUG_NOISE_SIGMA = 0.05   # on already-standardised features (unit-ish scale)
+AUG_MASK_PROB = 0.3      # fraction of batch samples that get a temporal mask
+AUG_MASK_MAX_LEN = 3     # masked span length: 1..3 frames
+
+
+def augment_batch(x: torch.Tensor) -> torch.Tensor:
+    """Train-time augmentation (--augment): Gaussian feature noise plus, for
+    a random subset of samples, a short temporal mask -- a random 1-3 frame
+    span replaced by that window's own per-feature time-mean (NOT zeros:
+    the features are standardised, so raw zeros are an out-of-distribution
+    vector, and the all-zero no-face convention has its own semantics the
+    mask must not fake). Returns a new tensor; the loader's original
+    batch is untouched.
+    """
+    x = x + torch.randn_like(x) * AUG_NOISE_SIGMA
+    n, t, _ = x.shape
+    masked = torch.rand(n) < AUG_MASK_PROB
+    for i in torch.nonzero(masked, as_tuple=False).flatten().tolist():
+        length = int(torch.randint(1, AUG_MASK_MAX_LEN + 1, (1,)))
+        start = int(torch.randint(0, t - length + 1, (1,)))
+        x[i, start:start + length, :] = x[i].mean(dim=0)
+    return x
+
+
 @torch.no_grad()
 def evaluate(model: nn.Module, loader: DataLoader, ordinal: bool = False) -> dict:
     model.eval()
@@ -183,6 +207,18 @@ def main() -> None:
                              "CE/focal engagement loss with unweighted CORAL "
                              "loss; --focal-gamma/--weight-power/"
                              "--label-smoothing are ignored when set.")
+    parser.add_argument("--augment", action="store_true",
+                        help="train-time-only augmentation: Gaussian feature "
+                             "noise (sigma 0.05 on the already-standardised "
+                             "features) + random temporal masking (30%% of "
+                             "samples get a random 1-3 frame span replaced "
+                             "by that window's per-feature time-mean). No "
+                             "oversampling -- resampling on top of the "
+                             "weighted CE loss would double-correct for "
+                             "class imbalance, the same failure mode the "
+                             "ensemble meta-learner diagnosis documented "
+                             "(docs/results/rigorous_model_search.md). "
+                             "Validation is never augmented.")
     args = parser.parse_args()
 
     if args.arch != "tcn":
@@ -239,6 +275,8 @@ def main() -> None:
         run_name += f"_do{args.dropout}"
     if args.ordinal:
         run_name += "_ordinal"
+    if args.augment:
+        run_name += "_aug"
     if args.seed != 42:
         run_name += f"_seed{args.seed}"
     run_dir = RUNS_DIR / run_name
@@ -280,6 +318,8 @@ def main() -> None:
         total_loss = 0.0
         n_batches = 0
         for x, y_eng, y_states in train_loader:
+            if args.augment:
+                x = augment_batch(x)
             optimizer.zero_grad()
             logits_eng, logits_states = model(x)
             loss = (engagement_loss(logits_eng, y_eng)

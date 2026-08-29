@@ -167,11 +167,25 @@ Full day-by-day record: `docs/PROGRESS.md`.
 
 ## Headline results
 
+Clip-level metrics (one prediction per 10 s clip — the granularity DAiSEE's labels
+and the published benchmark use; see `docs/results/clip_eval_test.json` and
+`docs/results/rigorous_model_search.md`):
+
+| Metric (Test, 1,784 clips) | Value |
+|---|---|
+| Macro-F1, clip-level, thresholds calibrated on Validation | **0.2829** |
+| 4-class accuracy, clip-level, calibrated | **44.7%** |
+| Macro-F1, clip-level, uncalibrated | 0.2482 |
+| 3-class merged macro-F1, calibrated | 0.3724 |
+| Majority-class floor (macro-F1) | 0.1655 |
+| Published SOTA for context (Abedi & Khan 2021, ResNet+TCN, not edge-deployable) | 63.9% accuracy |
+
+Window-level metrics (this project's original reporting basis, kept for continuity):
+
 | Metric (Test, 14,241 windows) | Value |
 |---|---|
 | Macro-F1 (fp32) | 0.2475 |
 | Macro-F1 (int8, shipped) | 0.2460 |
-| Majority-class floor | 0.1655 |
 | 3-class merged macro-F1 | 0.3318 |
 | Model size fp32 → int8 | 163 KB → 60 KB |
 | In-browser inference (p50) | 0.4 ms |

@@ -178,6 +178,39 @@ All three Phase 1 sub-phases done same day as gap-closure. Full findings:
   tested with real DAiSEE clips driven through a clean build. None
   crashed, froze, or produced a non-normalized/garbage prediction.
 
+## Extended model comparison, rigorous search, honest evaluation — 2026-08-26 → 2026-08-29
+
+Three commits (`dd2c99b`, `9294347`, `1c17a19`) plus this session's
+evaluation-reframing pass, all Track A / `ml/` + `docs/results/` only —
+the shipped browser model was deliberately **not** changed (every search
+result validated it rather than beating it):
+
+- **Extended comparison** (`docs/results/model_comparison_summary.md`):
+  gradient-boosting baseline (significantly beats the TCN on Test,
+  p<0.001), QWK metric, LSTM/GRU/Transformer at matched budgets,
+  feature-family ablation, 3-seed robustness reruns, clip-level bootstrap
+  significance testing.
+- **Rigorous search** (`docs/results/rigorous_model_search.md`):
+  subject-grouped 5-fold CV (caught + fixed a clip-vs-subject fold-leakage
+  bug that had manufactured a false feature-selection finding), 40-trial
+  Optuna search (validated the shipped hyperparameters: tuned-vs-shipped
+  p=0.92), OOF stacking ensemble (failed; failure diagnosed to the
+  meta-learner over-trusting RF's majority-class confidence; remedy
+  recovers it only to parity), CORAL ordinal variant (trade-off, not a
+  win). Optuna added to `ml/requirements.txt`.
+- **Honest evaluation reframing** (`ml/src/clip_eval.py`,
+  `docs/results/clip_eval_{validation,test}.json`): clip-level scoring
+  (the benchmark's actual granularity) + per-class decision thresholds
+  calibrated on Validation, applied frozen to the consumed-once Test
+  predictions: **Test macro-F1 0.2475 → 0.2829, accuracy 36.9% → 44.7%**,
+  deployed model untouched. Binary screening reported with AUC/balanced
+  accuracy (accuracy alone is below the trivial baseline at this
+  prevalence — stated, not hidden).
+- **Thesis updated in place** (`docs/thesis/FYP_Report.md`): Experiments
+  7–8 added, §4.3.3 claim corrected, §5 rewritten around the new
+  evidence, CORAL/Optuna references added, AI-use declaration added
+  (wording to be verified against university policy).
+
 ## Artifact index
 
 | Artifact | What it is |
