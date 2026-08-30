@@ -392,7 +392,7 @@ Figure 4.3 contains two curves that demand direct interpretation rather than a c
 
 Per-class test F1: very low (class 0) 0.000 (0 of 32 windows correctly identified — see discussion below), low (class 1) 0.140, engaged (class 2) 0.429, very engaged (class 3) 0.420. The 3-class-merged metric (0+1 collapsed) reaches 0.3318 on Test, materially higher than the 4-class macro-F1 of 0.2475, quantifying how much of the 4-class score is being suppressed by a single near-unmeasurable class.
 
-The **export parity check** (Section 3.2.8) passed at a maximum absolute difference of well under the 1×10⁻⁵ threshold across 100 random inputs (PyTorch vs. exported ONNX), and the **static QDQ int8 quantization** cost 0.0015 macro-F1 on Test (0.2475 → 0.2460; `docs/results/quantization_test.csv`) for a 2.7× size reduction — the browser-execution smoke test (Section 2.5.2) confirmed the quantized graph loads and runs correctly inside `onnxruntime-web`'s WASM backend, with a measured in-browser inference p50 latency of 0.4 ms (Experiment 5).
+The **export parity check** (Section 3.2.8) passed at a maximum absolute difference of well under the 1×10⁻⁵ threshold across 100 random inputs (PyTorch vs. exported ONNX), and the **static QDQ int8 quantization** cost 0.0015 macro-F1 on Test (0.2475 → 0.2460; `docs/results/quantization_test.csv`) for a 2.7× size reduction — the browser-execution smoke test (Section 2.5.2) confirmed the quantized graph loads and runs correctly inside `onnxruntime-web`'s WASM backend, with a measured in-browser inference p50 latency of 0.475 ms (Experiment 5).
 
 **The secondary states head**, displayed as four independent likelihood bars in the live application, has its own evaluation — reported here because a shipped output with no reported metrics would be an omission. After the head's dedicated retraining with per-channel positive-class weighting (its original unweighted loss had collapsed the two rare channels to their base rates), the shipped checkpoint scores on Validation (source: `docs/results/metrics_states_validation.csv`):
 
@@ -591,7 +591,7 @@ In descending order of how directly each follows from a limitation already named
 
 ---
 
-## References
+# References
 
 Abedi, A. and Khan, S.S. (2021) 'Improving state-of-the-art in detecting student engagement with ResNet and TCN hybrid network', in *2021 18th Conference on Robots and Vision (CRV)*. IEEE. Available at: https://arxiv.org/abs/2104.10122 (Accessed: 9 August 2026).
 
@@ -627,7 +627,7 @@ Soukupová, T. and Čech, J. (2016) 'Real-time eye blink detection using facial 
 
 ---
 
-## Appendices
+# Appendices
 
 **Appendix A — Feature vector specification.** Full 13-feature table with landmark indices, formulae, and sign conventions: `CONTRACT.md` §2–4 (this project's repository).
 

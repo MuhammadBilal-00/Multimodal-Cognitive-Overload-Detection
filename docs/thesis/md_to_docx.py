@@ -13,6 +13,7 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
@@ -22,22 +23,25 @@ OUT = Path(sys.argv[2]) if len(sys.argv) > 2 else SRC.with_suffix(".docx")
 INLINE_RE = re.compile(r"(\*\*.+?\*\*|\*.+?\*|`.+?`)")
 
 
-def add_inline_runs(paragraph, text):
+def add_inline_runs(paragraph, text, bold=False, italic=False):
+    """Recursive so nested spans keep both formats: a `code` span inside a
+    **bold** run used to be emitted with its literal backticks, because the
+    outer match consumed the whole chunk and never re-scanned it."""
     for chunk in INLINE_RE.split(text):
         if not chunk:
             continue
         if chunk.startswith("**") and chunk.endswith("**"):
-            run = paragraph.add_run(chunk[2:-2])
-            run.bold = True
+            add_inline_runs(paragraph, chunk[2:-2], bold=True, italic=italic)
         elif chunk.startswith("*") and chunk.endswith("*") and not chunk.startswith("**"):
-            run = paragraph.add_run(chunk[1:-1])
-            run.italic = True
+            add_inline_runs(paragraph, chunk[1:-1], bold=bold, italic=True)
         elif chunk.startswith("`") and chunk.endswith("`"):
             run = paragraph.add_run(chunk[1:-1])
             run.font.name = "Consolas"
             run.font.size = Pt(10)
+            run.bold, run.italic = bold, italic
         else:
-            paragraph.add_run(chunk)
+            run = paragraph.add_run(chunk)
+            run.bold, run.italic = bold, italic
 
 
 def set_cell_shading(cell, color_hex):
@@ -54,8 +58,13 @@ def set_cell_shading(cell, color_hex):
 # updated; `enable_field_autoupdate` below makes that happen on open.
 FIELD_INSTRUCTIONS = {
     "TOC": r'TOC \o "1-3" \h \z \u',
-    "LOF": r'TOC \h \z \c "Figure"',
-    "LOT": r'TOC \h \z \c "Table"',
+    # \c "Figure" would collect paragraphs containing a SEQ Figure
+    # field; these captions carry literal, chapter-scoped numbers instead
+    # ("Figure 4.1 — ..."), so \c finds nothing and Word renders "No
+    # table of figures entries found". \t collects by paragraph style,
+    # which is why figure and table captions use two distinct styles.
+    "LOF": r'TOC \h \z \t "Caption,1"',
+    "LOT": r'TOC \h \z \t "Table Caption,1"',
 }
 
 FIELD_PLACEHOLDER = (
@@ -134,6 +143,18 @@ def add_page_numbers(doc):
         for r in para.runs:
             r.font.size = Pt(9)
             r.font.color.rgb = RGBColor(0x60, 0x60, 0x60)
+
+
+TABLE_CAPTION_STYLE = "Table Caption"
+
+
+def ensure_table_caption_style(doc):
+    """A clone of Caption, used only for table captions, so the List of
+    Tables and the List of Figures can each collect one style."""
+    if TABLE_CAPTION_STYLE in [s.name for s in doc.styles]:
+        return
+    style = doc.styles.add_style(TABLE_CAPTION_STYLE, WD_STYLE_TYPE.PARAGRAPH)
+    style.base_style = doc.styles["Caption"]
 
 
 def parse_table(lines, i):
@@ -270,10 +291,14 @@ def build(doc, lines):
 
         # italic-only note/placeholder paragraph
         if stripped.startswith("*") and stripped.endswith("*") and not stripped.startswith("**"):
+            # Inline spans still have to be parsed inside the italic note,
+            # or `code` renders with its literal backticks (visible on the
+            # title page's provenance paragraph).
             p = doc.add_paragraph()
-            run = p.add_run(stripped[1:-1])
-            run.italic = True
-            run.font.color.rgb = RGBColor(0x60, 0x60, 0x60)
+            add_inline_runs(p, stripped[1:-1])
+            for run in p.runs:
+                run.italic = True
+                run.font.color.rgb = RGBColor(0x60, 0x60, 0x60)
             i += 1
             continue
 
@@ -281,7 +306,7 @@ def build(doc, lines):
         # Insert Table of Figures / Tables finds it; prose mentions like
         # "Table 4.1 shows..." lack the em-dash and stay normal paragraphs.
         if re.match(r"^Table \d+\.\d+ —", stripped):
-            p = doc.add_paragraph(style="Caption")
+            p = doc.add_paragraph(style=TABLE_CAPTION_STYLE)
             add_inline_runs(p, stripped)
             i += 1
             continue
@@ -308,6 +333,7 @@ def main():
         hstyle.font.color.rgb = RGBColor(0x1F, 0x38, 0x64)
         hstyle.font.bold = True
 
+    ensure_table_caption_style(doc)
     build(doc, lines)
     add_page_numbers(doc)
     enable_field_autoupdate(doc)

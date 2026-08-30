@@ -219,4 +219,4 @@ Window-level metrics (this project's original reporting basis, kept for continui
 | 3-class merged macro-F1 | 0.3318 |
 | Model size fp32 → int8 | 163 KB → 60 KB |
 | In-browser inference (p50) | 0.4 ms |
-| Feature parity, Python↔browser | max diff 0.0079 (tol 0.02) |
+| Feature parity, Python↔browser | max diff 0.0035 (tol 0.02) |

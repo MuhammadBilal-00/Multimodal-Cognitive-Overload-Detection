@@ -23,7 +23,7 @@ leaves the user's machine.
 | 3–5 | 2026-08-01→02 | Multiprocess extraction over 9,032 clips: **0 failures, 99.96% face detection** (`docs/results/extraction_stats.json`). Windowed dataset + `scaler.json` (pitch_centre 0.3733). Parity fixture (VP9 WebM) for the Python↔browser gate. |
 | 6–7 | 2026-08-02 | TCN model, 41.5k params. A6.5 browser smoke PASS — static QDQ int8 (dynamic quantization is browser-incompatible: onnxruntime-web WASM lacks ConvInteger). J1 parity gate PASS, worst feature diff **0.0079** (tol 0.02) — `docs/results/parity_report.json`; GPU-delegate variant fails (0.05), which is why the app pins the CPU delegate. |
 | 8–9 | 2026-08-02 | Training: 6 runs. Winner = weighted CE (full inverse-freq), lr 1e-3 — val macro-F1 **0.3061** vs majority floor 0.1813. Focal loss, lower lr, sqrt weights, label smoothing all worse. |
-| 10–11 | 2026-08-02 | Validation eval artifacts (`docs/results/metrics_validation.csv`, confusion + ROC plots). Trained int8 shipped to `web/public/model/` (60 KB, quantization Δ macro-F1 −0.0016). Next.js app + fake-webcam e2e PASS. |
+| 10–11 | 2026-08-02 | Validation eval artifacts (`docs/results/metrics_validation.csv`, confusion + ROC plots). Trained int8 shipped to `web/public/model/` (60 KB, quantization Δ macro-F1 −0.0015). Next.js app + fake-webcam e2e PASS. |
 | 14–15 | 2026-08-02 | **Final test-set evaluation — run exactly once, after model freeze**: see headline table below. J3 browser benchmarks archived (`docs/results/browser_benchmark.json`). |
 | — | 2026-08-01→03 | In parallel, Track B built the full web app in its own repository against a dummy model with contract-identical I/O (`scripts/make_dummy_onnx.py`), so it was never blocked on training. |
 | — | 2026-08-03 | **Repository merge** (see below), CONTRACT.md v1.1 amendment, multi-face support, 3 s prediction cadence. |
@@ -39,7 +39,7 @@ leaves the user's machine.
 | 3-class merged macro-F1 | 0.3318 |
 | Model size fp32 → int8 | 163 KB → 60 KB |
 | In-browser inference (p50) | 0.4 ms |
-| Feature parity Python↔browser | max diff 0.0079 (tol 0.02) |
+| Feature parity Python↔browser | max diff 0.0035 (tol 0.02) |
 
 Caveat for the writeup: engagement class 0 has only 4 test clips, so its
 per-class metrics are unmeasurable; adjacent-class confusion dominates the
@@ -245,7 +245,7 @@ chart skips no-face points. Thesis Figure 4.4 recaptured accordingly.
 |---|---|
 | `docs/results/extraction_stats.json` | 9,032-clip extraction: failures, detection rate |
 | `docs/results/class_dist.png` | DAiSEE label distribution |
-| `docs/results/parity_report.json` | J1 Python↔browser feature parity (rebuilt harness, `numFaces:1` feature path, PASS — worst diff 0.0157) |
+| `docs/results/parity_report.json` | J1 Python↔browser feature parity (rebuilt harness, `numFaces:1` feature path, post-Amendment-4 brow fix, PASS — worst diff 0.0035) |
 | `docs/results/parity_report_gpu.json` | Same gate with GPU delegate (FAIL — why CPU is pinned) |
 | `docs/results/baselines.csv` | A5: majority / logreg / random-forest macro-F1 + accuracy, Validation & Test |
 | `docs/results/quantization.csv` | fp32 → int8 accuracy delta |
