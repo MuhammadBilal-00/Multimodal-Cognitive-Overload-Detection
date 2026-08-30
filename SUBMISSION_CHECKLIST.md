@@ -174,9 +174,23 @@ The project's own Definition of Done wants 3 machines.
 
 ## 6. Freeze (last step, after 1–4)
 
-- [ ] Tag the release: `git tag v1.0 && git push origin v1.0`. Per
-      `PROJECT_COMPLETION_PLAN.md` Phase 5: no commits after the tag except
-      what a re-run of the dry-run forces.
+- [x] **Tagged `v1.0` and pushed, 2026-08-30** (annotated tag on commit
+      `6988881`). Tagged on explicit instruction rather than at the end of
+      the sequence `PROJECT_COMPLETION_PLAN.md` Phase 5 intended, so the
+      Phase 5 rule "no commits after the tag" does **not** hold here — the
+      open items above (supervisor review, the university's declaration and
+      ethics wording, the §1b authorship question, machines 2–3, the
+      handoff session) will all produce commits after it.
+
+      If you want the tag to mark the genuinely final state once those
+      close, move it rather than adding a second one:
+
+      ```
+      git tag -f -a v1.0 -m "v1.0 — MSc submission build"
+      git push --force origin v1.0
+      ```
+
+      To remove it entirely: `git tag -d v1.0 && git push origin :refs/tags/v1.0`.
 
 ---
 
