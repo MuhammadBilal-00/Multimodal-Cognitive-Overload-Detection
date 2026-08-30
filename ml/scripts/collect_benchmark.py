@@ -1,10 +1,11 @@
 """J3/B7: drive the app's own "Run 300 inferences" benchmark headlessly
 and archive the result.
 
-Starts the production Next.js server, clicks the BenchmarkPanel button
-(BenchmarkPanel.tsx), captures the JSON file it downloads (runBenchmark()
-in lib/benchmark.ts triggers a browser download, not a window global —
-there is no /bench page and no window.__BENCH anymore), and copies it into
+Starts the production Next.js server, opens the collapsed Benchmark
+panel and clicks its button (BenchmarkPanel.tsx), captures the JSON file
+it downloads (runBenchmark() in lib/benchmark.ts triggers a browser
+download, not a window global — there is no /bench page and no
+window.__BENCH anymore), and copies it into
 docs/benchmarks/benchmark-<machine-label>.json.
 
 Requires `web/` already built (`npm run build` in web/) — this script only
@@ -69,8 +70,15 @@ def main() -> None:
             browser = pw.chromium.launch()
             page = browser.new_page()
             page.goto(f"http://127.0.0.1:{PORT}/")
+            # The BenchmarkPanel is behind a collapsed toggle
+            # (CognitiveApp.tsx: `benchmarkOpen` starts false), so the
+            # "Run 300 inferences" button does not exist at page load —
+            # open the panel first, or the click below times out.
+            page.get_by_role("button", name="Benchmark", exact=True).click()
+            run_button = page.get_by_role("button", name="Run 300 inferences")
+            run_button.wait_for(state="visible", timeout=30_000)
             with page.expect_download(timeout=180_000) as download_info:
-                page.click("text=Run 300 inferences")
+                run_button.click()
             download = download_info.value
             out_path = BENCHMARKS_DIR / f"benchmark-{sanitize(args.machine_label)}.json"
             download.save_as(out_path)
