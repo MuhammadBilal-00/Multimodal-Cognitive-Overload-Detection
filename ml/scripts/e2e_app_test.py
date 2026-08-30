@@ -127,6 +127,11 @@ def main() -> None:
             "engagement_label": LEVELS[level],
             "engagement_probs": pred["engagement"],
             "state_probs": pred["states"],
+            # usePipeline.ts exposes statesNamed precisely so the artefact
+            # is not a bare positional array — recording only the positions
+            # is what let the alphabetical-vs-contract channel-order bug
+            # (CONTRACT.md Amendment 3) sit unnoticed in this file.
+            "states_named": state.get("statesNamed"),
             "infer_ms": pred["ms"],
         }
         ok = (checks["status"] == "live" and checks["face_present"]

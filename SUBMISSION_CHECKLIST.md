@@ -95,6 +95,14 @@ Read these before Turnitin. They are ordered by risk to the mark.
       §3.3; if none was required, say so explicitly in §3.3 rather than
       leaving silence. This was **not** asserted either way here, because
       it is not a fact recoverable from the repository.
+- [ ] **Re-run the J2 end-to-end test** to pick up named states:
+      `python ml/scripts/e2e_app_test.py` (needs the DAiSEE-derived fake-webcam
+      fixture, which is not committed, so it can only run on a machine with
+      dataset access). The script now records `states_named` alongside the
+      positional array — the committed `docs/results/app_e2e.json` predates
+      that and still stores states positionally, which is exactly the shape
+      that let the Amendment 3 channel-order bug hide. Not a wrong number,
+      but a weaker artefact than the code implies.
 - [ ] **Five of the thirteen tables have no caption**, so they will not
       appear in the generated List of Tables. Add
       `Table N.N — <description>` lines above them in

@@ -38,7 +38,7 @@ leaves the user's machine.
 | Majority-class floor | 0.1655 |
 | 3-class merged macro-F1 | 0.3318 |
 | Model size fp32 → int8 | 163 KB → 60 KB |
-| In-browser inference (p50) | 0.4 ms |
+| In-browser inference (p50) | 0.475 ms |
 | Feature parity Python↔browser | max diff 0.0035 (tol 0.02) |
 
 Caveat for the writeup: engagement class 0 has only 4 test clips, so its
