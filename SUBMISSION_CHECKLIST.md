@@ -55,6 +55,11 @@ Still needs a human:
       accurate paragraph, but it is the one part of a dissertation that
       should sound like you.
 
+> **Regenerating the .docx:** `python docs/thesis/md_to_docx.py` (needs
+> `python-docx`, now pinned in `ml/requirements.txt`). It **overwrites**
+> `FYP_Report.docx` and discards manual Word edits — so do any Word work
+> *after* the last regeneration, never before.
+
 ## 1b. Things an audit found that only a human can settle (2026-08-30)
 
 Read these before Turnitin. They are ordered by risk to the mark.
@@ -128,7 +133,7 @@ The project's own Definition of Done wants 3 machines.
       `python ml/scripts/collect_benchmark.py` (the collector was fixed on
       2026-08-30 — it previously could not find its own button).
 - [ ] Machine 3 (friend's laptop, lab PC): `cd web && npm install &&
-      npm run build`, then from the repo root `python
+      npm run build`, then `cd ..` and `python
       ml/scripts/collect_benchmark.py --machine-label "<cpu>-<ram>"`
       (needs Python + `pip install -r ml/requirements.txt` with the
       `--extra-index-url` from README, + `playwright install chromium`).
@@ -154,7 +159,7 @@ The project's own Definition of Done wants 3 machines.
       recorded in `docs/dry-run-checklist.md`). Optionally re-run once on
       the actual presentation machine/room if different (checklist Part 3).
 - [ ] Demo start command: `cd web && npm run build && npm start`
-      (port 3000; use `-p 3010` if 3000 is busy).
+      (port 3000; use `npm start -- -p 3010` if 3000 is busy).
 - [x] Live Stats readings recorded in `docs/dry-run-checklist.md`:
       render 36 fps, sampling 10 Hz, p50 0.78 ms, wasm×20.
 

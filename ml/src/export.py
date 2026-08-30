@@ -164,6 +164,9 @@ def main() -> None:
                         help="npz with standardised windows for static "
                              "quantization calibration")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--allow-random-calibration", action="store_true",
+                        help="calibrate int8 on random normals (smoke export "
+                             "only — never for a shipped model)")
     args = parser.parse_args()
 
     if not args.untrained and args.checkpoint is None:
@@ -193,7 +196,7 @@ def main() -> None:
 
     calibration_source = quantize(
         fp32_path, int8_path, args.calibration,
-        allow_random_calibration=args.untrained)
+        allow_random_calibration=args.untrained or args.allow_random_calibration)
     smoke_run_int8(int8_path)
 
     sizes = {p.name: p.stat().st_size for p in (fp32_path, int8_path)}

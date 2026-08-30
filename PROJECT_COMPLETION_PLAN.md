@@ -2,7 +2,11 @@
 
 Companion to `BUILD_PLAN_1.md` and `GAP_CLOSURE_PLAN.md`. Written 2026-08-09. Covers everything between "gap closure merged" and "ready to submit and defend" — phased, with a checkpoint (gate) closing each phase, in the same spirit as BUILD_PLAN_1.md's J1–J4 joint gates: nothing here is "done" until its acceptance criterion is actually true, not just attempted.
 
-**Not yet implemented — this is a plan, like `GAP_CLOSURE_PLAN.md`.**
+**Status as of 2026-08-30: Phases 0, 1, 3 and 5.2 executed; Phase 2 (two
+more benchmark machines), Phase 4 (student handoff) and Phase 5.3 (the
+`v1.0` tag) outstanding. Phase 5.1's live rehearsal was completed
+2026-08-29 — `docs/dry-run-checklist.md`. See `SUBMISSION_CHECKLIST.md`
+for the consolidated remaining list.**
 
 ## Context
 
@@ -122,7 +126,7 @@ Uses the runbook `GAP_CLOSURE_PLAN.md` Part 3 produces (`docs/benchmarks/README.
 > supplied, §3.2's blockers were resolved except submission/defense
 > dates. Full draft: `docs/thesis/FYP_Report.md` (source) and
 > `docs/thesis/FYP_Report.docx` (generated, ready to open in Word) —
-> 10,032 words main body / 11,492 total, mapped onto the template's exact
+> 14,262 words main body / 16,310 total, mapped onto the template's exact
 > chapter structure (Introduction → Literature Review → Methodology →
 > Experimentation → Conclusion, each sub-numbered as the template
 > specifies), 13 references in Harvard style — every one individually
@@ -146,7 +150,7 @@ The largest open item — `docs/PROGRESS.md`'s own open-items list names it firs
 
 ### 3.2 Needs your input (resolved except dates)
 - ~~Your university's required thesis structure/template~~ — **supplied 2026-08-09**, followed exactly.
-- ~~Page/word count targets~~ — **supplied 2026-08-09** (marking scheme: 10,000–15,000 words); draft is at 10,032/11,492.
+- ~~Page/word count targets~~ — **supplied 2026-08-09** (marking scheme: 10,000–15,000 words); draft is at 14,262/16,310.
 - Submission deadline and defense date — still needed, only to pace the *remaining* steps (placeholder completion, supervisor review), not to write further content.
 
 ### 3.3 Checkpoints, mapped onto the actual template
@@ -226,7 +230,7 @@ Direct continuation of BUILD_PLAN_1.md's own Day 20 gate.
 | Student can walk the pipeline unaided | Materials ready (`docs/student-handoff.md`); the actual session is still to happen | Phase 4 |
 | Live dry-run rehearsal | Script ready (`docs/dry-run-checklist.md`); not yet run for real | Phase 5.1 |
 | *(not in original DoD, added by audit)* CI wired at all | **Done** | Phase 0 |
-| *(tracked separately in `docs/PROGRESS.md`)* Thesis writeup | **First full draft done** (`docs/thesis/FYP_Report.md`/`.docx`, 10,032/11,492 words, Harvard refs) — placeholders + supervisor review remain | Phase 3 |
+| *(tracked separately in `docs/PROGRESS.md`)* Thesis writeup | **First full draft done** (`docs/thesis/FYP_Report.md`/`.docx`, 14,262/16,310 words, Harvard refs) — placeholders + supervisor review remain | Phase 3 |
 
 ---
 

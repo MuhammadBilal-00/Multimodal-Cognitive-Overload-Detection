@@ -48,9 +48,11 @@ npm run build
 npm start
 ```
 
-Open `http://localhost:3000`, click "Run 300 inferences" in the Benchmark
-panel, and save the JSON it downloads into this directory as
-`benchmark-<machine-label>.json`.
+Open `http://localhost:3000`, click the **Benchmark** toggle in the control
+bar to expand the panel, then click "Run 300 inferences" and save the JSON
+it downloads into this directory as `benchmark-<machine-label>.json`.
+(The panel starts collapsed — the automated collector had to be fixed for
+the same reason on 2026-08-30.)
 
 ## What's in each file
 

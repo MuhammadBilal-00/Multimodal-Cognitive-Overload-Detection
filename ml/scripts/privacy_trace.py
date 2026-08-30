@@ -67,6 +67,10 @@ def main() -> None:
         cwd=WEB_ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     requests: list[dict] = []
     console: list[str] = []
+    # None until the app actually reaches "live"; the verdict field below is
+    # derived from it rather than hardcoded, so a run that never went live
+    # cannot report that it did.
+    t_live = None
     t_start = time.time()
     try:
         wait_for_port(PORT)
@@ -116,7 +120,7 @@ def main() -> None:
         "unexpected_csp_violations": unexpected_csp,  # must be []
         "verdict": {
             "zero_external_requests": len(external) == 0,
-            "app_reached_live_under_full_csp": True,
+            "app_reached_live_under_full_csp": t_live is not None,
             "only_expected_csp_violations": len(unexpected_csp) == 0,
         },
     }

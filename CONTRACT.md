@@ -1,6 +1,8 @@
 # INTERFACE CONTRACT — Track A (ML) ↔ Track B (Web)
 
-**Version 1.3 — Day 1; §6 Amendment 1 on 2026-08-03; Amendment 2 on 2026-08-09; §5 Amendment 3 on 2026-08-14**
+**Version 1.4 — Day 1; §6 Amendment 1 on 2026-08-03; Amendment 2 on 2026-08-09; §5 Amendment 3 on 2026-08-14 (implemented 2026-08-16, commit 2e95fe4); §2 Amendment 4 on 2026-08-29**
+
+> *§9's split counts were corrected on 2026-08-30 — they had never matched > the dataset on disk (see the note in that section). A factual correction > to a descriptive count, not an interface change: no signal, field, order, > or tolerance moved.*
 **Status of each section: FROZEN unless marked OPEN.**
 
 This document is the single source of truth for everything that crosses the
@@ -254,8 +256,11 @@ clips and label rows, within official split folders only.
 
 ## 9. Dataset splits (FROZEN)
 
-DAiSEE's **official** Train / Validation / Test folders (5482 / 1723 / 1720
-clips) — already subject-independent, directly comparable to the published
+DAiSEE's **official** Train / Validation / Test folders (5,481 / 1,720 / 1,866
+clips on disk = 9,067; the corpus actually used downstream is the
+label∩extraction intersection, 5,357 / 1,429 / 1,784 = 8,570 — corrected
+2026-08-30, the earlier "5482 / 1723 / 1720" matched neither the disk nor
+`docs/results/extraction_stats.json`) — already subject-independent, directly comparable to the published
 benchmark. **No random re-splitting.** Zero clip-ID overlap between splits is
 enforced by an `assert` in code, not a comment.
 
@@ -276,7 +281,7 @@ enforced by an `assert` in code, not a comment.
 XNNPACK delegate but are different runtimes (native vs WASM); this
 produces small, expected sub-pixel landmark noise, not a train/serve bug.
 0.02 is the value the team empirically validated: worst-case observed
-diff is 0.0079–0.016 depending on harness (`docs/results/parity_report.json`),
+diff is 0.0079–0.016 depending on harness (*superseded — see Amendment 4; `docs/results/parity_report.json` now records 0.0035*),
 comfortably under tolerance, while still tight enough to catch a real
 skew (see below).
 

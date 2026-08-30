@@ -1,4 +1,4 @@
-# Project Progress — as of 2026-08-09
+# Project Progress — as of 2026-08-30
 
 Privacy-preserving cognitive state detection in the browser: a temporal
 convolutional network trained on DAiSEE, quantized to int8 ONNX, running
@@ -11,8 +11,9 @@ leaves the user's machine.
   feature extraction, inference, dashboard, benchmarking
 
 `CONTRACT.md` is the frozen interface contract between the tracks
-(currently **v1.2**, both partners signed 2026-08-03, Amendment 2 on
-2026-08-09).
+(currently **v1.4** — Amendments 1–4; Amendment 3 fixed the states channel
+order, Amendment 4 the brow eye-centre formula. Both partners signed
+2026-08-03; Azeem's sign-off on Amendments 3 and 4 is still open).
 
 ## Timeline
 
@@ -21,7 +22,7 @@ leaves the user's machine.
 | 1 | 2026-08-01 | Repo scaffold, interface contract, pinned Python 3.11 env (`ml/requirements.txt`). DAiSEE access form submitted, download started. Audio check: DAiSEE is video-only, so "multimodal" = three visual modality families (CONTRACT.md §8). |
 | 2 | 2026-08-01 | `features.py` (13-feature contract implementation) + 17 unit tests. Landmark indices visually verified — `docs/verification/landmarks_{overview,zoom}.png`. |
 | 3–5 | 2026-08-01→02 | Multiprocess extraction over 9,032 clips: **0 failures, 99.96% face detection** (`docs/results/extraction_stats.json`). Windowed dataset + `scaler.json` (pitch_centre 0.3733). Parity fixture (VP9 WebM) for the Python↔browser gate. |
-| 6–7 | 2026-08-02 | TCN model, 41.5k params. A6.5 browser smoke PASS — static QDQ int8 (dynamic quantization is browser-incompatible: onnxruntime-web WASM lacks ConvInteger). J1 parity gate PASS, worst feature diff **0.0079** (tol 0.02) — `docs/results/parity_report.json`; GPU-delegate variant fails (0.05), which is why the app pins the CPU delegate. |
+| 6–7 | 2026-08-02 | TCN model, 41.5k params. A6.5 browser smoke PASS — static QDQ int8 (dynamic quantization is browser-incompatible: onnxruntime-web WASM lacks ConvInteger). J1 parity gate PASS, worst feature diff **0.0079** at the time (tol 0.02; later 0.0157 after the numFaces fix, and **0.0035** after Amendment 4 — the current committed value) — `docs/results/parity_report.json`; GPU-delegate variant fails (0.05), which is why the app pins the CPU delegate. |
 | 8–9 | 2026-08-02 | Training: 6 runs. Winner = weighted CE (full inverse-freq), lr 1e-3 — val macro-F1 **0.3061** vs majority floor 0.1813. Focal loss, lower lr, sqrt weights, label smoothing all worse. |
 | 10–11 | 2026-08-02 | Validation eval artifacts (`docs/results/metrics_validation.csv`, confusion + ROC plots). Trained int8 shipped to `web/public/model/` (60 KB, quantization Δ macro-F1 −0.0015). Next.js app + fake-webcam e2e PASS. |
 | 14–15 | 2026-08-02 | **Final test-set evaluation — run exactly once, after model freeze**: see headline table below. J3 browser benchmarks archived (`docs/results/browser_benchmark.json`). |
@@ -55,7 +56,8 @@ errors (`docs/results/confusion_test.png`).
 - `ml/scripts/` — landmark verification, parity-fixture builder, headless
   browser gates, e2e app test, benchmark collector
 - Shipped: `web/public/model/model_int8.onnx` (60 KB) + `scaler.json`
-  (+ `model_fp32.onnx` for browser comparison)
+  (`model_fp32.onnx` is produced into gitignored `artifacts/export/` for
+  the Python-side fp32-vs-int8 latency comparison, not shipped to the browser)
 
 ## Track B deliverables
 
@@ -85,7 +87,9 @@ lived in its own GitHub repo, not a fork). Merged with
   deleted as superseded.
 - The **real trained** `model_int8.onnx` + `scaler.json` were kept over
   Track B's dummy placeholder.
-- `web/harness/*.html` and `model_fp32.onnx` carried over untouched.
+- `web/harness/*.html` and `model_fp32.onnx` carried over untouched (historical:
+  `web/harness/onnx_smoke.html` was later deleted and then restored in
+  2026-08-30's audit pass, because `ml/scripts/browser_tests.py` still needs it).
 
 ## Post-merge changes — 2026-08-03
 
@@ -140,7 +144,7 @@ at routes/globals the merge itself deleted — and that the recorded J1
   `window.__ENGINE_STATE` mirror in `usePipeline.ts`
   (`{status, prediction, facePresent}`), retargeted the script, fixed a
   leftover 2 Hz-era `time.sleep(2)` to 4 s (must exceed the current 3 s
-  inference window). Re-ran: fresh `app_e2e.json` / `app_screenshot.png`,
+  inference window). Re-ran: fresh `app_e2e.json` / `artifacts/app_screenshot_e2e.png`,
   `ok: true`.
 - **CI added** (`.github/workflows/ci.yml`) — vitest + typecheck and
   `pytest ml/tests/` run unconditionally; the J1 Playwright gate runs only
@@ -254,7 +258,7 @@ chart skips no-face points. Thesis Figure 4.4 recaptured accordingly.
 | `docs/results/roc_{validation,test}.png` | ROC curves |
 | `docs/results/browser_smoke.json` | A6.5: int8 ONNX runs in onnxruntime-web |
 | `docs/results/browser_benchmark.json` | Legacy J3 artifact (deleted `/bench` page era: int8 vs fp32 + separate landmark timing) — superseded by `docs/benchmarks/`, kept for history |
-| `docs/results/app_e2e.json`, `app_screenshot.png` | J2 fake-webcam end-to-end app test (refreshed 2026-08-09) |
+| `docs/results/app_e2e.json` | J2 fake-webcam end-to-end app test (refreshed 2026-08-09). Its screenshot stays in gitignored `artifacts/` because the fake-cam frame is a DAiSEE participant's face; the committed, licence-safe capture of the current UI is `docs/results/app_screenshot_synthetic.png` |
 | `docs/verification/landmarks_{overview,zoom}.png` | Visual landmark-index verification |
 | `docs/benchmarks/benchmark-dev-i7-13700H-16GB.json` | J3: real int8 model, this dev machine (2026-08-09) |
 | `docs/benchmarks/benchmark-dummy-model-dev-machine.json` | Legacy Track B benchmark harness output (dummy-model era) — kept for history, not a valid J3 data point |
@@ -267,13 +271,16 @@ chart skips no-face points. Thesis Figure 4.4 recaptured accordingly.
   Blocked on machine availability (PROJECT_COMPLETION_PLAN.md Phase 2).
 - **Thesis writeup — first full draft done (2026-08-09)**, once the
   university report template and marking scheme were supplied:
-  `docs/thesis/FYP_Report.md` / `.docx`, 10,032 words main body / 11,492
-  total (target 10,000–15,000), Harvard referencing throughout (13
+  `docs/thesis/FYP_Report.md` / `.docx`, 14,262 words main body
+  (Chapters 1–5; target 10,000–15,000) / 16,310 total including front
+  matter, references and appendices, Harvard referencing throughout (13
   citations, each individually verified real via web search before use —
   none fabricated), mapped onto the template's exact chapter structure.
-  Remaining: fill in the bracketed placeholders (name, banner ID,
-  supervisor, dates), insert the actual figure/table images where marked,
-  and a supervisor review pass — PROJECT_COMPLETION_PLAN.md §3.
+  Front matter completed 2026-08-30 (Acknowledgements, generated
+  contents lists, page numbers, document properties); all figures are
+  embedded. Remaining: the supervisor review pass, the university's
+  required declaration-of-originality and ethics wording, and the
+  authorship-consistency question — see `SUBMISSION_CHECKLIST.md` §1b.
 - **One manual Firefox check** — Playwright can't feed Firefox a
   file-backed fake camera the way it can Chromium, so Firefox's
   real-face detection (as opposed to load/init/no-face-path) hasn't been
@@ -282,7 +289,8 @@ chart skips no-face points. Thesis Figure 4.4 recaptured accordingly.
   (`docs/student-handoff.md`: pipeline walkthrough + question bank +
   `baselines.py` deep-dive); the actual session with the student hasn't
   happened yet.
-- **Live dry-run rehearsal + `v1.0` tag** — script ready
-  (`docs/dry-run-checklist.md`); deliberately not run/tagged yet —
-  PROJECT_COMPLETION_PLAN.md Phase 5 gates the tag behind the rehearsal
-  actually happening live.
+- **`v1.0` tag** — the live dry-run rehearsal it was gated behind is
+  **done** (2026-08-29, all failure modes passed —
+  `docs/dry-run-checklist.md`). The tag itself is the only remaining
+  Phase 5 item, and is deliberately held until the human-only items in
+  `SUBMISSION_CHECKLIST.md` are settled.

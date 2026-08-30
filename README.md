@@ -181,7 +181,7 @@ the archive plus extracted frames.
 - [x] Audio-stream check: **no audio in DAiSEE** — "multimodal" = three visual modality families (CONTRACT.md §8)
 - [x] Day 2 — `features.py` + tests (17 passing) + landmark indices visually verified (`docs/verification/`)
 - [x] Days 3–5 — extraction (all 9,067 on-disk clips have feature CSVs; the committed `extraction_stats.json` covers the 9,032 processed in its final `--resume` pass — 0 failures, 99.96% detection over those; 8,570 labelled∩extracted clips ultimately feed training: 5,357/1,429/1,784), windows + `scaler.json` (pitch_centre 0.3733), parity fixture
-- [x] Days 6–7 — TCN (41.5k params), A6.5 browser smoke PASS (static QDQ int8; dynamic quant is browser-incompatible), J1 parity gate PASS (worst diff 0.0079)
+- [x] Days 6–7 — TCN (41.5k params), A6.5 browser smoke PASS (static QDQ int8; dynamic quant is browser-incompatible), J1 parity gate PASS (worst diff 0.0079 at the time; now **0.0035** after Amendment 4)
 - [x] Days 8–9 — training: 6 runs, winner weighted-CE lr 1e-3, val macro-F1 0.3061 (majority floor 0.1813)
 - [x] Days 10–11 — eval artifacts (validation), trained int8 shipped (60 KB, Δ macro-F1 −0.0015 on Test, `docs/results/quantization_test.csv`), Next.js app + fake-webcam e2e PASS
 - [x] Days 14–15 — **final test-set evaluation (run exactly once, 2026-08-02)**: fp32 macro-F1 **0.2475** vs majority floor 0.1655; int8 0.2460 (Δ −0.0015); 3-class merged 0.3318; J3 browser benchmarks archived
@@ -189,7 +189,13 @@ the archive plus extracted frames.
 - [x] 2026-08-03 — CONTRACT.md v1.1 (§6 Amendment 1: 3 s prediction cadence), both partners signed; multi-face detection (up to 4, primary-face prediction, People count); landmarker pinned to CPU delegate per parity evidence
 - [x] 2026-08-09 — Gap-closure pass: J1 rebuilt as a real Playwright Test (caught and fixed a real `numFaces:4` parity regression — see CONTRACT.md Amendment 2, v1.2); A5 baselines (`docs/results/baselines.csv`); J3 benchmark collector rewritten + re-run; J2 e2e script fixed and re-run; CI added (`.github/workflows/ci.yml`)
 - [x] 2026-08-09 — Hardening pass (`PROJECT_COMPLETION_PLAN.md` Phase 1): clean-clone install verified (found + fixed a real README gap); Chrome/Edge/Firefox cross-browser check (COOP/COEP confirmed honored in all three); five demo failure-mode scenarios tested clean — `docs/demo-failure-modes.md`
-- [x] 2026-08-09 — Thesis: first full draft complete (`docs/thesis/FYP_Report.md`/`.docx`), Harvard referencing, matched to the supplied university template and marking scheme; placeholders + supervisor review still pending
+- [x] 2026-08-09 — Thesis: first full draft complete (`docs/thesis/FYP_Report.md`/`.docx`), Harvard referencing, matched to the supplied university template and marking scheme
+- [x] 2026-08-16 — CONTRACT.md Amendment 3 (v1.3): `states` channel order corrected from alphabetical to the contract's order; states head retrained (commit 2e95fe4)
+- [x] 2026-08-26→29 — Model-comparison and rigorous-search pass (Experiments 7–8): LSTM/GRU/Transformer at matched budgets, subject-grouped CV feature ablation (caught a fold-leakage bug), 40-trial Optuna search, OOF stacking (failed, diagnosed), CORAL ordinal variant; clip-level re-scoring with validation-calibrated thresholds lifts comparable Test macro-F1 0.2475 → 0.2829 with no change to the deployed model
+- [x] 2026-08-29 — Audit remediation R1–R5: brow eye-centre formula bug fixed (CONTRACT.md Amendment 4 — parity worst diff 0.0157 → **0.0035**), sampling drift fixed, evidence regenerated on the current build, coverage added for thesis-critical code
+- [x] 2026-08-29 — Live rehearsal complete (all failure modes passed, `docs/dry-run-checklist.md`); no-face windows now suppress model output entirely
+- [x] 2026-08-30 — Thesis front matter complete (Acknowledgements, generated contents lists, page numbers, document properties); submission audit fixes; `npm ci` unbroken
+- [ ] Supervisor review pass, plus the human-only items in `SUBMISSION_CHECKLIST.md` §1b (authorship consistency, declaration of originality, ethics statement)
 - [ ] Two more J3 benchmark machines (runbook: `docs/benchmarks/README.md`)
 - [ ] Student handoff walkthrough + freeze/tag (`PROJECT_COMPLETION_PLAN.md` Phases 4–5)
 

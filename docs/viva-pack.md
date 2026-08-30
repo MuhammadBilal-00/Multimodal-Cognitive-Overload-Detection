@@ -145,7 +145,7 @@ with an accumulator clock, disclosed in §5.2.2b.
 
 | Risk | Plan |
 |---|---|
-| Camera claimed by Teams/Zoom (`NotReadableError`) | The app shows a specific message for it (WebcamFeed handles 6 DOMException types — demo-worthy in itself). Close the other app; if stuck, switch to the backup browser profile. |
+| Camera claimed by Teams/Zoom (`NotReadableError`) | The app shows a specific message for it (WebcamFeed maps four DOMException names, a missing-API case and a generic fallback to six distinct messages — demo-worthy in itself). Close the other app; if stuck, switch to the backup browser profile. |
 | No network in the room | Everything is self-hosted; say so and point at the privacy story. Verify once beforehand with WiFi off. |
 | Projector at odd resolution | UI is responsive; if the overlay misaligns, that's `coverFit` handling 16:9 — zoom the browser, don't resize the camera. |
 | App won't reach "Live" | Fallback: `docs/results/privacy_trace.json` + `app_e2e.json` + the synthetic screenshot prove the current build works; walk the evidence instead. |

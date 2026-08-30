@@ -12,7 +12,9 @@ scaler → ONNX → UI), not a mock.
 
 Screenshots were captured locally for each scenario but are **not
 committed** — several contain DAiSEE participants' faces, same
-redistribution restriction already applied to `docs/results/app_screenshot.png`.
+redistribution restriction, which is why that capture stays in gitignored
+`artifacts/` and the committed, licence-safe view is
+`docs/results/app_screenshot_synthetic.png`.
 The state dumps below (`window.__ENGINE_STATE` + DOM perf stats) are the
 recorded evidence instead.
 

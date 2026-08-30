@@ -186,6 +186,56 @@ def set_core_properties(doc):
     cp.revision = 1
 
 
+
+def restart_numbering(doc, paragraph):
+    """Clone the List Number abstract numbering into a fresh w:num so this
+    list starts at 1 instead of continuing the previous one."""
+    numbering = doc.part.numbering_part.element
+    style = doc.styles["List Number"]
+    abstract_id = None
+    pr = style.element.find(qn("w:pPr"))
+    if pr is not None:
+        numpr = pr.find(qn("w:numPr"))
+        if numpr is not None:
+            numid = numpr.find(qn("w:numId"))
+            if numid is not None:
+                src = numid_val = numid.get(qn("w:val"))
+                for num in numbering.findall(qn("w:num")):
+                    if num.get(qn("w:numId")) == src:
+                        a = num.find(qn("w:abstractNumId"))
+                        if a is not None:
+                            abstract_id = a.get(qn("w:val"))
+    if abstract_id is None:
+        return
+    used = [int(n.get(qn("w:numId"))) for n in numbering.findall(qn("w:num"))]
+    new_id = str(max(used) + 1 if used else 1)
+    num = OxmlElement("w:num")
+    num.set(qn("w:numId"), new_id)
+    a = OxmlElement("w:abstractNumId")
+    a.set(qn("w:val"), abstract_id)
+    num.append(a)
+    override = OxmlElement("w:lvlOverride")
+    override.set(qn("w:ilvl"), "0")
+    start = OxmlElement("w:startOverride")
+    start.set(qn("w:val"), "1")
+    override.append(start)
+    num.append(override)
+    numbering.append(num)
+
+    ppr = paragraph._p.get_or_add_pPr()
+    numpr = ppr.find(qn("w:numPr"))
+    if numpr is None:
+        numpr = OxmlElement("w:numPr")
+        ppr.append(numpr)
+    for tag in ("w:ilvl", "w:numId"):
+        old_el = numpr.find(qn(tag))
+        if old_el is not None:
+            numpr.remove(old_el)
+    ilvl = OxmlElement("w:ilvl"); ilvl.set(qn("w:val"), "0")
+    nid = OxmlElement("w:numId"); nid.set(qn("w:val"), new_id)
+    numpr.append(ilvl); numpr.append(nid)
+
+
 def parse_table(lines, i):
     rows = []
     while i < len(lines) and lines[i].strip().startswith("|"):
@@ -202,6 +252,8 @@ def build(doc, lines):
     i = 0
     n = len(lines)
     first_h1 = True
+    in_front_matter = True
+    prev_was_numbered = False
     while i < n:
         line = lines[i]
         stripped = line.strip()
@@ -214,6 +266,7 @@ def build(doc, lines):
             # page break between major sections, skip on very first lines
             if doc.paragraphs:
                 doc.add_page_break()
+            in_front_matter = False
             i += 1
             continue
 
@@ -257,7 +310,9 @@ def build(doc, lines):
         img = re.match(r"^!\[(.*)\]\((.+)\)$", stripped)
         if img:
             caption, rel_path = img.group(1), img.group(2)
-            img_path = (SRC.parent.parent.parent / rel_path).resolve()
+            # Paths are relative to the .md (so the report also renders
+            # correctly on GitHub, which Appendix G points the examiner to).
+            img_path = (SRC.parent / rel_path).resolve()
             if img_path.exists():
                 p = doc.add_paragraph()
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -278,6 +333,18 @@ def build(doc, lines):
         if m:
             level = len(m.group(1))
             text = m.group(2).strip()
+            # A Table of Contents that lists itself (and the two lists that
+            # sit beside it) reads as a mistake. Render these three as
+            # heading-looking paragraphs with no Heading style, so the
+            # `TOC \o "1-3"` field cannot pick them up.
+            if text in ("Table of Contents", "List of Figures", "List of Tables"):
+                p = doc.add_paragraph()
+                run = p.add_run(text)
+                run.bold = True
+                run.font.size = Pt(13)
+                run.font.color.rgb = RGBColor(0x1F, 0x38, 0x64)
+                i += 1
+                continue
             if level == 1:
                 if first_h1:
                     p = doc.add_paragraph()
@@ -295,6 +362,8 @@ def build(doc, lines):
             i += 1
             continue
 
+        prev_was_numbered = False
+
         # bullet list
         if stripped.startswith("- "):
             p = doc.add_paragraph(style="List Bullet")
@@ -306,12 +375,22 @@ def build(doc, lines):
         m = re.match(r"^(\d+)\.\s+(.*)$", stripped)
         if m:
             p = doc.add_paragraph(style="List Number")
+            # Every "List Number" paragraph shares one numbering sequence, so
+            # the document's later numbered lists continued the earlier ones
+            # (Future Work rendered as 4.-9. instead of 1.-6.). Give each new
+            # run its own numId so it restarts at 1.
+            if not prev_was_numbered:
+                restart_numbering(doc, p)
             add_inline_runs(p, m.group(2))
+            prev_was_numbered = True
             i += 1
             continue
 
-        # bold-only short "field: value" cover-page lines
-        if stripped.startswith("**") and stripped.endswith("**") and stripped.count("**") == 2:
+        # Cover-page lines: bold-only, and ONLY before the first rule. The
+        # old `count("**") == 2` test both missed the supervisor/second-marker
+        # line (which has two bold spans, so it stayed left-aligned amid a
+        # centred cover) and centred bold lead-ins in body prose.
+        if in_front_matter and stripped.startswith("**") and stripped.endswith("**"):
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             add_inline_runs(p, stripped)

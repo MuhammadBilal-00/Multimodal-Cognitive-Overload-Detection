@@ -1,5 +1,13 @@
 # Azeem — Track B Brief: Web & Edge Inference
 
+> **Historical document — the original Day-1 brief, kept for the record.**
+> Superseded on several points by `CONTRACT.md` Amendments 1–4 and
+> `docs/privacy.md`. In particular: the `states` channel order given below
+> is **wrong** (alphabetical — this is the exact bug Amendment 3 was raised
+> to fix; the contract order is authoritative), and inference runs once per
+> 3.0 s window, not at 2 Hz (Amendment 1). Build against `CONTRACT.md`, not
+> against this file.
+
 **Project:** Privacy-preserving cognitive state detection running entirely in the browser
 **Your remit:** the whole web application and in-browser inference layer
 **Partner:** Bilal (Track A — data extraction, model training, ONNX export)

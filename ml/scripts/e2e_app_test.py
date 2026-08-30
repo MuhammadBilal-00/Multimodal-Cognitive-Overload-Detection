@@ -11,7 +11,11 @@ camera automatically once permission is granted (usePipeline.ts /
 CognitiveApp.tsx), unlike the deleted JS scaffold this script originally
 targeted.
 
-Writes docs/results/app_screenshot.png and app_e2e.json.
+Writes docs/results/app_e2e.json. The screenshot goes to gitignored
+artifacts/app_screenshot_e2e.png, not docs/results/ — the fake-camera
+frame is a DAiSEE participant's face (see the note at the screenshot
+call); the committed, licence-safe capture is
+docs/results/app_screenshot_synthetic.png.
 
 Usage: python ml/scripts/e2e_app_test.py
 """
