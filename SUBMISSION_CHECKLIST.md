@@ -108,10 +108,13 @@ Read these before Turnitin. They are ordered by risk to the mark.
       that and still stores states positionally, which is exactly the shape
       that let the Amendment 3 channel-order bug hide. Not a wrong number,
       but a weaker artefact than the code implies.
-- [ ] **Five of the thirteen tables have no caption**, so they will not
-      appear in the generated List of Tables. Add
-      `Table N.N — <description>` lines above them in
-      `docs/thesis/FYP_Report.md` if you want full coverage.
+- [x] **Table captions — done 2026-08-30.** Four content tables were
+      uncaptioned and so would have been missing from the List of Tables;
+      they are now Tables 3.1, 3.2, 4.3 and 4.5, which required renumbering
+      the old 4.3–4.8 to 4.4–4.10. Every in-text reference was re-verified
+      against its caption. The Glossary table is deliberately left
+      uncaptioned — it is front matter, not a numbered table. The List of
+      Tables now carries 12 entries and the List of Figures 6.
 
 ## 2. Turnitin (do this EARLY)
 
@@ -141,11 +144,17 @@ The project's own Definition of Done wants 3 machines.
       If a third machine is not realistic, **do nothing further** — §4.5.3
       and §5.3 state the count honestly and stay accurate either way.
 
-## 4. Azeem (one conversation)
+## 4. Remaining partner items
 
-- [ ] Sign-off boxes in `CONTRACT.md`: **Amendment 3** (states channel
-      order) and **Amendment 4** (brow formula fix) — Bilal's boxes are
-      ticked, Azeem's are open.
+- [x] Sign-off boxes in `CONTRACT.md`: **Amendment 3** (states channel
+      order) and **Amendment 4** (brow formula fix) — **both signed by
+      Azeem on 2026-08-30**, at Azeem's own request. Both amendments are
+      Track B (web-side) changes: Amendment 3 corrects the `states` channel
+      order that `PredictionPanel.tsx` had been consuming wrongly (the bar
+      labelled "Confused" was showing P(engagement)); Amendment 4 corrects
+      the TypeScript brow eye-centre formula from the six-landmark centroid
+      to the two-corner midpoint the contract specifies. The contract is
+      now fully signed.
 - [ ] The **student handoff session** (`docs/student-handoff.md` is the
       walkthrough script + question bank; checkpoint = she can run
       `python ml/src/baselines.py` and explain every column unaided).

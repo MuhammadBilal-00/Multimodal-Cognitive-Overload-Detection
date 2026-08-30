@@ -271,8 +271,8 @@ chart skips no-face points. Thesis Figure 4.4 recaptured accordingly.
   Blocked on machine availability (PROJECT_COMPLETION_PLAN.md Phase 2).
 - **Thesis writeup — first full draft done (2026-08-09)**, once the
   university report template and marking scheme were supplied:
-  `docs/thesis/FYP_Report.md` / `.docx`, 14,262 words main body
-  (Chapters 1–5; target 10,000–15,000) / 16,310 total including front
+  `docs/thesis/FYP_Report.md` / `.docx`, 14,352 words main body
+  (Chapters 1–5; target 10,000–15,000) / 16,400 total including front
   matter, references and appendices, Harvard referencing throughout (13
   citations, each individually verified real via web search before use —
   none fabricated), mapped onto the template's exact chapter structure.

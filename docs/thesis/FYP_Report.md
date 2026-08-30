@@ -199,6 +199,8 @@ Read together, Sections 2.1–2.5 describe a field that has largely bifurcated i
 
 Derived directly from the dataset properties established in Section 1.5 and the prior-work gaps identified in Section 2:
 
+Table 3.1 — Functional and non-functional requirements, each traced to the dataset property or prior-work gap that motivates it.
+
 | # | Requirement | Source |
 |---|---|---|
 | R1 | Feature extraction must be numerically reproducible across two independent language implementations (Python training, TypeScript inference), to a documented, empirically-justified tolerance | Section 1.3(2); no equivalent guarantee exists for raw-pixel deep features (Section 2.1.2) |
@@ -220,6 +222,8 @@ No single named methodology (e.g. CRISP-DM) is followed wholesale; the project i
 ### 3.2.2 Step 1 — Feature definition (the contract itself)
 
 Thirteen features are computed per frame, identically specified for both language implementations (`CONTRACT.md` §2; reference implementation `ml/src/features.py`; browser port `web/lib/features.ts`):
+
+Table 3.2 — The 13-dimensional per-frame feature vector, in the frozen contract order (source: `CONTRACT.md` §2; reference implementation `ml/src/features.py`).
 
 | # | Feature | Definition |
 |---|---|---|
@@ -365,14 +369,16 @@ The winning configuration — full inverse-frequency weighted cross-entropy (wei
 
 Final test-set evaluation (run once, after freeze):
 
+Table 4.3 — Test-split headline metrics, fp32 against the shipped int8 model (source: `docs/results/quantization_test.csv`, `docs/results/metrics_test.csv`).
+
 | Metric | fp32 | int8 (shipped) |
 |---|---|---|
 | Test macro-F1 | 0.2475 | 0.2460 |
 | Model size | 163 KB (167,243 B) | 60 KB (61,650 B) |
 
-**Checkpoint provenance, stated explicitly**: all Test-split artefacts in this section (Table 4.3, Figures 4.2–4.3, `metrics_test.csv`) come from the checkpoint frozen when the test set was consumed on 2026-08-02. A later, small retraining of the *states* head (2026-08-16, fixing a collapse in the secondary head's rare channels) produced the checkpoint actually shipped in the browser; its engagement-head validation macro-F1 (0.3043) is within noise of the frozen checkpoint's (0.3061), and the consumed-once rule was honoured by *not* re-evaluating the retrained checkpoint on Test. Validation-split artefacts therefore describe the shipped checkpoint while Test-split artefacts describe the frozen one — a deliberate discipline, disclosed here rather than left for a reader to discover in the artefact timestamps.
+**Checkpoint provenance, stated explicitly**: all Test-split artefacts in this section (Table 4.4, Figures 4.2–4.3, `metrics_test.csv`) come from the checkpoint frozen when the test set was consumed on 2026-08-02. A later, small retraining of the *states* head (2026-08-16, fixing a collapse in the secondary head's rare channels) produced the checkpoint actually shipped in the browser; its engagement-head validation macro-F1 (0.3043) is within noise of the frozen checkpoint's (0.3061), and the consumed-once rule was honoured by *not* re-evaluating the retrained checkpoint on Test. Validation-split artefacts therefore describe the shipped checkpoint while Test-split artefacts describe the frozen one — a deliberate discipline, disclosed here rather than left for a reader to discover in the artefact timestamps.
 
-Table 4.3 — Per-class Test-split metrics, fp32 (source: `docs/results/metrics_test.csv`):
+Table 4.4 — Per-class Test-split metrics, fp32 (source: `docs/results/metrics_test.csv`):
 
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
@@ -395,6 +401,8 @@ Per-class test F1: very low (class 0) 0.000 (0 of 32 windows correctly identifie
 The **export parity check** (Section 3.2.8) passed at a maximum absolute difference of well under the 1×10⁻⁵ threshold across 100 random inputs (PyTorch vs. exported ONNX), and the **static QDQ int8 quantization** cost 0.0015 macro-F1 on Test (0.2475 → 0.2460; `docs/results/quantization_test.csv`) for a 2.7× size reduction — the browser-execution smoke test (Section 2.5.2) confirmed the quantized graph loads and runs correctly inside `onnxruntime-web`'s WASM backend, with a measured in-browser inference p50 latency of 0.475 ms (Experiment 5).
 
 **The secondary states head**, displayed as four independent likelihood bars in the live application, has its own evaluation — reported here because a shipped output with no reported metrics would be an omission. After the head's dedicated retraining with per-channel positive-class weighting (its original unweighted loss had collapsed the two rare channels to their base rates), the shipped checkpoint scores on Validation (source: `docs/results/metrics_states_validation.csv`):
+
+Table 4.5 — Secondary states head, per-state screening performance on the Validation split, after the head's dedicated retraining with per-channel positive-class weighting (source: `docs/results/metrics_states_validation.csv`).
 
 | State | Prevalence | Recall | ROC-AUC | Average precision |
 |---|---|---|---|---|
@@ -441,7 +449,7 @@ The shipped application includes a self-contained benchmark (`lib/benchmark.ts`)
 
 On the development machine used throughout this project (13th Gen Intel Core i7-13700H, 16 GB RAM, 20 logical threads): mean inference latency **0.567 ms**, p50 **0.475 ms**, p95 **1.165 ms**, p99 **2.115 ms**, mean throughput ≈1,762 inferences/second, zero measured JS heap growth over the 300-cycle run, WASM backend confirmed running with 20 threads.
 
-Table 4.4 — In-browser inference benchmark, development machine (source: `docs/benchmarks/benchmark-dev-i7-13700H-16GB.json`; 300 cycles against the shipped int8 model, ONNX-session latency only — this is not an end-to-end pipeline rate):
+Table 4.6 — In-browser inference benchmark, development machine (source: `docs/benchmarks/benchmark-dev-i7-13700H-16GB.json`; 300 cycles against the shipped int8 model, ONNX-session latency only — this is not an end-to-end pipeline rate):
 
 | Metric | Value |
 |---|---|
@@ -492,7 +500,7 @@ After the primary evaluation was complete, the modelling breadth was extended to
 
 Gradient boosting proved the strongest classical baseline by a clear margin: validation macro-F1 0.2907 (vs. random forest 0.2669), and on Test 0.2910 against the TCN's 0.2475 — with the cluster bootstrap finding the Test reversal statistically significant (p<0.001, 95% CI of the difference entirely negative) while the TCN's validation lead is not (p=0.19). Across three seeds at matched budgets, the architecture comparison gave mean macro-F1: TCN 0.3015 (±0.0049), Transformer 0.3019 (±0.0066), LSTM 0.2938 (±0.0139), GRU 0.2907 (±0.0064) — the TCN and Transformer statistically indistinguishable, both ahead of the recurrent pair on average, though individual seeds overlap. The TCN remains the shipped model for a deployment reason, not an accuracy one: it had already passed export, int8 quantization and the `onnxruntime-web` WASM operator check before this comparison ran, and the Transformer had passed none of them — the same class of gate that ruled out dynamic quantization in Section 2.5.2. A feature-ablation result in which a pose-free subset (geometric+gaze) beat the full 13 features — reproduced across all three seeds, with non-overlapping ranges (0.3252 / 0.3122 / 0.3083 against the full set's 0.3061 / 0.3019 / 0.2964; `docs/results/multi_seed_robustness.csv`) — is revisited and overturned in Experiment 8, where subject-grouped cross-validation dissolves it entirely.
 
-Table 4.5 — Architecture comparison at matched hyperparameters, Validation split, mean macro-F1 ± std over three seeds (source: `docs/results/multi_seed_robustness.csv`; single-seed values in `architecture_comparison.csv`):
+Table 4.7 — Architecture comparison at matched hyperparameters, Validation split, mean macro-F1 ± std over three seeds (source: `docs/results/multi_seed_robustness.csv`; single-seed values in `architecture_comparison.csv`):
 
 | Architecture | Parameters | Mean macro-F1 (n=3) | Std |
 |---|---|---|---|
@@ -501,7 +509,7 @@ Table 4.5 — Architecture comparison at matched hyperparameters, Validation spl
 | LSTM | 20,744 | 0.2938 | 0.0139 |
 | GRU | 15,688 | 0.2907 | 0.0064 |
 
-Table 4.6 — Clip-level bootstrap significance tests, TCN vs. gradient boosting, 2,000 iterations resampling clip IDs (source: `docs/results/significance.json`):
+Table 4.8 — Clip-level bootstrap significance tests, TCN vs. gradient boosting, 2,000 iterations resampling clip IDs (source: `docs/results/significance.json`):
 
 | Split | TCN − GBM (point) | 95% CI of difference | p (two-sided) |
 |---|---|---|---|
@@ -526,7 +534,7 @@ The final experimental phase asked the strictest available version of the modell
 
 **The evaluation reframing produced the largest legitimate headline change in the project.** At clip level on Validation, accuracy rises from 0.4433 to 0.4563 (macro-F1 0.3043→0.3099), and with per-class thresholds calibrated on Validation, to 0.5283 (macro-F1 0.3260, in-sample of the calibration). Applied unchanged to the frozen Test predictions — the honest out-of-sample check — the calibrated clip-level result is **macro-F1 0.2829 and 44.7% four-class accuracy**, against the committed window-level 0.2475 and 36.9%: a +14% relative macro-F1 improvement from the decision layer alone, with the deployed model untouched. The binary screening view is reported with its caveats welded on: Test accuracy 0.777 *sounds* strong but sits below the 95.1% trivial all-engaged baseline; the honest numbers are ROC-AUC 0.683 and balanced accuracy 0.619 — modest discriminative power, stated as such.
 
-Table 4.7 — The search that validated the shipped model: each avenue, its result, and its evidence file (full record: `docs/results/rigorous_model_search.md`):
+Table 4.9 — The search that validated the shipped model: each avenue, its result, and its evidence file (full record: `docs/results/rigorous_model_search.md`):
 
 | Avenue | Outcome | Key numbers | Source |
 |---|---|---|---|
@@ -536,7 +544,7 @@ Table 4.7 — The search that validated the shipped model: each avenue, its resu
 | CORAL ordinal head | Trade-off, not a win | macro-F1 −0.049, accuracy +0.039, QWK +0.025 | `ordinal_comparison.csv` |
 | Train-time augmentation, 3 seeds full budget | No improvement | 0.2969 ± 0.0075 vs. 0.3015 ± 0.0049 | `honest_evaluation.md` §5 |
 
-Table 4.8 — Evaluation reframing: the same predictions scored at the benchmark's clip granularity, with and without the Validation-calibrated decision thresholds (sources: `clip_eval_validation.json`, `clip_eval_test.json`):
+Table 4.10 — Evaluation reframing: the same predictions scored at the benchmark's clip granularity, with and without the Validation-calibrated decision thresholds (sources: `clip_eval_validation.json`, `clip_eval_test.json`):
 
 | Basis | Val. accuracy | Val. macro-F1 | Test accuracy | Test macro-F1 |
 |---|---|---|---|---|
