@@ -98,7 +98,7 @@ than smoothed over:**
   logreg, geometric-only (0.2680) beats every other subset including full (0.2427).
 - **Caveat, stated plainly**: each cell is a single training run, not averaged over
   seeds or cross-validated — TCN training is seed-42-only and known from the original
-  6-run hyperparameter search (`docs/PROGRESS.md`) to have run-to-run variance on this
+  6-run hyperparameter search to have run-to-run variance on this
   scale of dataset. The geometric+gaze TCN result (0.3252) is the single best macro-F1
   in this entire study and is flagged here as a genuine, interesting result **and** a
   candidate for a multi-seed follow-up before treating "drop pose" as a real
@@ -126,7 +126,7 @@ split:
 
 **On Validation, the TCN's lead over gradient boosting is not statistically
 significant** — the 95% CI for the difference crosses zero (p=0.194). The
-hyperparameter search that selected the TCN's final configuration (`docs/PROGRESS.md`,
+hyperparameter search that selected the TCN's final configuration,
 6 runs) picked the best of several close configurations on this same margin; this
 result says that margin is not distinguishable from noise at conventional confidence
 levels, once clip-level clustering is accounted for.

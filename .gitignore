@@ -62,3 +62,6 @@ Thumbs.db
 
 # git format-patch exports — transient, never part of the tree
 *.patch
+
+# Local archive of historical tracking documents — never commit
+archive/

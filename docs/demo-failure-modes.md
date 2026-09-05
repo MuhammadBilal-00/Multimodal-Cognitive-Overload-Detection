@@ -1,10 +1,10 @@
 # Demo hardening — cross-browser + failure modes
 
-PROJECT_COMPLETION_PLAN.md Phase 1: prove the demo survives contact with
-reality before a panel finds the edges. All tests below were run against
+The hardening objective was to prove the demo survives contact with reality
+before a panel finds the edges. All tests below were run against
 a genuinely clean clone + build (`git clone` into a fresh directory,
-`npm install && npm run build && npm start` — see the Phase 1.1 note in
-`BUILD_PLAN_1.md`'s status banner), driven headlessly via Playwright with
+`npm install && npm run build && npm start`), driven headlessly via
+Playwright with
 `--use-fake-device-for-media-stream` / `--use-file-for-fake-video-capture`
 feeding real DAiSEE clips (or synthetic frames) as the webcam, so every
 result below reflects the real pipeline (webcam → landmarker → features →

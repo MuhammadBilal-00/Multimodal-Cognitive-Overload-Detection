@@ -1,19 +1,17 @@
-# Student handoff — Track A pipeline walkthrough
+# Student handoff — pipeline walkthrough
 
-PROJECT_COMPLETION_PLAN.md Phase 4. Definition of Done, verbatim: *"The
-student can walk the full pipeline unaided and answer the questions in
-her prep plan."*
+The handoff objective is: *"The student can walk the full pipeline unaided
+and answer the questions in her prep plan."*
 
 **This document is preparation material, not the handoff itself.** The
-actual handoff is a live session between Bilal and the student — walking
+actual handoff is a live session with the student — walking
 through the real code together, then confirming she can explain it back
 unaided. Nothing here can substitute for that conversation; this just
 means you don't have to build the walkthrough and the Q&A bank from
 scratch in the room.
 
-Because A5's baselines were implemented directly this session rather than
-handed to the student as originally planned (`GAP_CLOSURE_PLAN.md`'s
-call, decided 2026-08-09), she should understand `baselines.py` at the
+Because A5's baselines were implemented directly in the project, she should
+understand `baselines.py` at the
 same depth as if she'd written it — not just receive the CSV it produces.
 **Checkpoint 4** is specifically: *she can run `python ml/src/baselines.py`
 and explain every line of the CSV it produces, unaided, on request.* The
@@ -118,7 +116,7 @@ accuracy) with patience 15. Loss = `CE(engagement, inverse-freq class
 weights) + 0.5 * BCE(states)`.
 
 **Why it matters — this is one of the embedded prep-plan questions
-(BUILD_PLAN_1.md A7):** DAiSEE's engagement levels are wildly imbalanced
+(the embedded acceptance criterion):** DAiSEE's engagement levels are wildly imbalanced
 — level 0 is ~0.7% of windows, level 1 ~4-5%. A model that always
 predicts "high engagement" (the majority class) scores ~50-57% *accuracy*
 while being completely useless — it never once correctly identifies a
@@ -178,13 +176,13 @@ Walk through it top to bottom and have her explain each piece back:
    **Ask her why this row is in the CSV at all**: it's the floor. A macro-F1
    of, say, 0.20 means nothing on its own — the question is always "0.20
    compared to what a model that learned nothing would score." The TCN's
-   entire acceptance criterion (BUILD_PLAN_1.md A7) is literally "beats
+   entire acceptance criterion is literally "beats
    this row."
 
 3. **The `_3class_merged` rows** — same predictions, relabeled by
    collapsing engagement levels 0 and 1 into one "low" class before
    scoring. **Ask her why**: engagement level 0 has only 4 clips in the
-   entire *test* split (`docs/PROGRESS.md`) — its per-class metrics are
+   entire *test* split — its per-class metrics are
    statistically close to meaningless on their own. Merging 0+1 gives a
    secondary, still-honest metric that isn't dominated by that sparsity.
    This is the exact same collapse `eval.py` applies to the TCN's own
@@ -222,7 +220,7 @@ chain, she is ready for the hardest baseline question the panel can ask.
 
 ## 3. Prep-plan question bank
 
-Straight from BUILD_PLAN_1.md's own acceptance criteria and design
+Straight from the project's acceptance criteria and design
 rationale — these are the kinds of questions a panel is likely to ask,
 because they're the kinds of questions the plan itself flags as
 non-obvious.
@@ -299,7 +297,7 @@ overclaiming.
 
 ## 4. Confirming the checkpoint
 
-Per PROJECT_COMPLETION_PLAN.md: *"she can run `python ml/src/baselines.py`
+The handoff criterion is: *"she can run `python ml/src/baselines.py`
 and explain every line of the CSV it produces, unaided, on request."*
 Concretely — have her, without prompting:
 

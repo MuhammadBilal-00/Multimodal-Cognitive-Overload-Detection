@@ -1,4 +1,4 @@
-# Benchmarks — J3 (BUILD_PLAN_1.md §J3 / §B7)
+# Benchmarks — J3
 
 "≥30 FPS" is meaningless without stating the hardware it was measured on.
 Every file in this directory is one machine's run of the app's own
@@ -10,8 +10,8 @@ headlessly via `ml/scripts/collect_benchmark.py`.
 
 ## Required: at least 3 machines
 
-BUILD_PLAN_1.md §J3 calls for both laptops plus one lab/library PC. As of
-2026-08-09 only this dev machine has a result
+The project requires results from both laptops plus one lab/library PC. As of
+2026-08-09 only the development machine has a result
 (`benchmark-dev-i7-13700H-16GB.json`). The other two are still needed —
 run the collector below on each and commit the resulting JSON. Do not
 fabricate numbers for hardware that hasn't actually run this.

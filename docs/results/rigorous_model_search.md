@@ -292,7 +292,7 @@ hyperparameter optimisation, an ensemble attempt) did not find one.
    class-weighting approach is ever composed with another imbalance-aware layer
    elsewhere.
 3. **The shipped TCN's hyperparameters, chosen informally in the original 6-run search
-   (`docs/PROGRESS.md`), are not meaningfully suboptimal.** A properly powered,
+   ), are not meaningfully suboptimal.** A properly powered,
    pruned, 40-trial Bayesian search over 7 hyperparameters, validated with full-budget
    multi-seed retraining and a significance test, found nothing better. This is
    reassuring evidence for the original choice, not a gap in it — worth stating

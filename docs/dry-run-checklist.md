@@ -1,7 +1,7 @@
-# Freeze & dry-run checklist (J4 / PROJECT_COMPLETION_PLAN.md Phase 5)
+# Freeze & dry-run checklist
 
-BUILD_PLAN_1.md's own J4 principle: *"Know what breaks before the panel
-finds it."* This is a script for the **live** rehearsal — sitting in
+The guiding principle is *"Know what breaks before the panel finds it."
+This is a script for the **live** rehearsal — sitting in
 front of an actual webcam, in the actual room if possible, ideally with
 someone else watching and taking notes. Everything in
 `docs/demo-failure-modes.md` was already verified automatedly (headless
@@ -90,14 +90,14 @@ this checklist, don't find out from the panel.
 
 ## Part 4 — Known, honest limitations to have an answer ready for
 
-Say these before you're asked, per BUILD_PLAN_1.md's own risk-register
+Say these before you're asked, based on the project's risk register
 philosophy (a properly-analyzed weak result passes review; a hidden one
 doesn't):
 
 - Engagement class 0 has only 4 clips in the entire test split — its
   per-class metrics are statistically close to meaningless alone; the
   3-class-merged metric exists specifically because of this
-  (`docs/PROGRESS.md`).
+      (the recorded project results).
 - Only 1 of the 3 required benchmark machines has been run
   (`docs/benchmarks/README.md` has the runbook for the other two — if
   they're done by defense time, update this line).
@@ -134,7 +134,7 @@ doesn't):
 
 ## Go / no-go before tagging `v1.0`
 
-Per PROJECT_COMPLETION_PLAN.md Phase 5: *"Tag v1.0. No commits after this
+The freeze rule is: *"Tag v1.0. No commits after this
 except what the dry run forces."* Don't tag until:
 
 - [ ] This checklist has actually been run live at least once, not just

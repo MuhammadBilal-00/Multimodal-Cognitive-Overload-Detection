@@ -14,7 +14,7 @@ the resampling unit matches the actual unit of independence in the data.
 
 Reads only already-frozen artefacts: the TCN checkpoint that produced the
 committed `docs/results/metrics_test.csv` (Test consumed exactly once,
-2026-08-02, before the later states-head retrain -- see docs/PROGRESS.md),
+2026-08-02, before the later states-head retrain),
 plus classical baselines trained identically to baselines.py's (not
 persisted there, so retrained here with the same hyperparameters/seed --
 the Validation-split point estimates below should match baselines.csv

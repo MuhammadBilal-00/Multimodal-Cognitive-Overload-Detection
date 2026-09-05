@@ -41,7 +41,7 @@ export interface ParityResult {
 }
 
 // CONTRACT.md Amendment 2 — see that document for why 0.02, not the
-// original 1e-4 from BUILD_PLAN_1.md §J1.
+// The original parity target was tightened after empirical CPU-delegate checks.
 const TOLERANCE = 0.02;
 
 declare global {

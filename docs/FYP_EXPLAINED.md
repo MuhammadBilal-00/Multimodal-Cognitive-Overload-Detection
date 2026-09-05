@@ -98,7 +98,8 @@ about the *size*, not speed — see §9.4.)
 models — export from PyTorch, run anywhere. WASM lets near-native code (the
 ONNX runtime, MediaPipe) run inside a browser tab. Together they're what
 makes "the model runs client-side" physically possible.
-
+ 
+ 
 ---
 
 ## 3. The dataset — DAiSEE
@@ -753,5 +754,5 @@ model (§4.3).
 
 *Companions: `docs/viva-pack.md` (timing, contingencies, do-not-say list),
 `docs/dry-run-checklist.md` (the demo script + your recorded rehearsal),
-`SUBMISSION_CHECKLIST.md` (what's left before the 3rd), and the thesis
+and the thesis
 itself — whose §5 says everything here in examiner-facing prose.*

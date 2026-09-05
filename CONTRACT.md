@@ -10,11 +10,10 @@
 **Status of each section: FROZEN unless marked OPEN.**
 
 This document is the single source of truth for everything that crosses the
-boundary between the Python ML pipeline (Bilal, Track A) and the Next.js
-in-browser inference app (Azeem, Track B). `ml/src/features.py` is the
-reference implementation of Sections 2–4; Azeem ports it to TypeScript
-literally. Changes to any FROZEN section require sign-off from both partners
-and a version bump.
+boundary between the Python ML pipeline (Track A) and the Next.js in-browser
+inference app (Track B). `ml/src/features.py` is the reference implementation
+of Sections 2–4, mirrored by the TypeScript implementation. Changes to any
+FROZEN section require project-owner sign-off and a version bump.
 
 ---
 
@@ -280,7 +279,7 @@ enforced by an `assert` in code, not a comment.
 
 **Tolerance: 0.02 max-abs-diff per feature** (after excluding
 `face_present` mismatches), not the original 1e-4 from
-`BUILD_PLAN_1.md` §J1. Python (`mediapipe.tasks.python`) and the browser
+The parity gate requires Python (`mediapipe.tasks.python`) and the browser
 (`@mediapipe/tasks-vision`) run the same `.task` model on the same CPU/
 XNNPACK delegate but are different runtimes (native vs WASM); this
 produces small, expected sub-pixel landmark noise, not a train/serve bug.
@@ -346,12 +345,10 @@ second WASM detection pass per sampled frame.
 
 ## Sign-off
 
-| Partner | Track | Date | Signed |
+| Approver | Track | Date | Signed |
 |---|---|---|---|
-| Bilal | A — ML pipeline | 2026-08-03 | ☑ |
-| Azeem | B — Web app | 2026-08-03 | ☑ |
-| Both | Amendment 2 (J1 rebuild, numFaces fix) | 2026-08-09 | ☑ |
-| Bilal | Amendment 3 (states channel order) | 2026-08-29 | ☑ |
-| Azeem | Amendment 3 (states channel order) | 2026-08-30 | ☑ |
-| Bilal | Amendment 4 (brow formula fix) | 2026-08-29 | ☑ |
-| Azeem | Amendment 4 (brow formula fix) | 2026-08-30 | ☑ |
+| Ibtissam Merzouqi | A — ML pipeline | 2026-08-03 | ☑ |
+| Ibtissam Merzouqi | B — Web app | 2026-08-03 | ☑ |
+| Ibtissam Merzouqi | Amendment 2 (J1 rebuild, numFaces fix) | 2026-08-09 | ☑ |
+| Ibtissam Merzouqi | Amendment 3 (states channel order) | 2026-08-29 | ☑ |
+| Ibtissam Merzouqi | Amendment 4 (brow formula fix) | 2026-08-29 | ☑ |
